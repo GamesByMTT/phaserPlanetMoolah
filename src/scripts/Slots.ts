@@ -162,7 +162,6 @@ export class Slots extends Phaser.GameObjects.Container {
             callback: this.showDisconnectionScene,
             callbackScope: this // Important for the 'this' context
         });
-        this.uiContainer.maxbetBtn.disableInteractive();
     }
 
     startReelSpin(reelIndex: number) {

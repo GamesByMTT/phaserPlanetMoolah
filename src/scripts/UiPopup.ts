@@ -26,7 +26,7 @@ export class UiPopups extends Phaser.GameObjects.Container {
         this.setPosition(0, 0);
         // this.ruleBtnInit();
         this.settingBtnInit();
-        this.menuBtnInit();
+        // this.menuBtnInit();
         this.exitButton();
         this.infoBtnInit();
         this.UiContainer = uiContainer
@@ -34,18 +34,18 @@ export class UiPopups extends Phaser.GameObjects.Container {
         scene.add.existing(this);
     }
 
-    menuBtnInit() {
-        const menuBtnTextures = [
-            this.scene.textures.get('MenuBtn'),
-            this.scene.textures.get('MenuBtnH')
-        ];
-        this.menuBtn = new InteractiveBtn(this.scene, menuBtnTextures, () => {
-            this.buttonMusic("buttonpressed")
-            this.openPopUp();
-        }, 0, true);
-        this.menuBtn.setPosition( gameConfig.scale.width * 0.92, gameConfig.scale.height / 7 );
-        this.add(this.menuBtn);
-    }
+    // menuBtnInit() {
+    //     const menuBtnTextures = [
+    //         this.scene.textures.get('MenuBtn'),
+    //         this.scene.textures.get('MenuBtnH')
+    //     ];
+    //     this.menuBtn = new InteractiveBtn(this.scene, menuBtnTextures, () => {
+    //         this.buttonMusic("buttonpressed")
+    //         // this.openPopUp();
+    //     }, 0, true);
+    //     this.menuBtn.setPosition( gameConfig.scale.width * 0.92, gameConfig.scale.height / 7 );
+    //     this.add(this.menuBtn);
+    // }
     exitButton(){
         const exitButtonSprites = [
             this.scene.textures.get('exitButton'),
@@ -68,8 +68,8 @@ export class UiPopups extends Phaser.GameObjects.Container {
             this.buttonMusic("buttonpressed")
             // setting Button
             this.openSettingPopup();
-        }, 1, false); // Adjusted the position index
-        this.settingBtn.setPosition(gameConfig.scale.width - this.settingBtn.width * 2, gameConfig.scale.height/2);
+        }, 1, true); // Adjusted the position index
+        this.settingBtn.setPosition(gameConfig.scale.width * 0.12, gameConfig.scale.height * 0.92);
         this.settingBtn.setScale(0.9)
         this.add(this.settingBtn);
     }
@@ -83,23 +83,23 @@ export class UiPopups extends Phaser.GameObjects.Container {
             // info button 
             this.buttonMusic("buttonpressed")
             this.openPage();
-        }, 2, false); // Adjusted the position index
-        this.infoBtn.setPosition(gameConfig.scale.width/ 2 - this.infoBtn.width * 5, this.infoBtn.height * 0.7).setScale(0.8);
+        }, 2, true); // Adjusted the position index
+        this.infoBtn.setPosition(gameConfig.scale.width * 0.18, gameConfig.scale.height * 0.92).setScale(0.45);
         this.add(this.infoBtn);
     }
 
-    openPopUp() {
-        // Toggle the isOpen boolean
-        this.isOpen = !this.isOpen;
-        this.menuBtn.setInteractive(false);
-        if (this.isOpen) {
-            this.tweenToPosition(this.settingBtn, 1);
-            this.tweenToPosition(this.infoBtn, 2);
-        } else {
-            this.tweenBack(this.settingBtn);
-            this.tweenBack(this.infoBtn);
-        }
-    }
+    // openPopUp() {
+    //     // Toggle the isOpen boolean
+    //     this.isOpen = !this.isOpen;
+    //     this.menuBtn.setInteractive(false);
+    //     if (this.isOpen) {
+    //         this.tweenToPosition(this.settingBtn, 1);
+    //         this.tweenToPosition(this.infoBtn, 2);
+    //     } else {
+    //         this.tweenBack(this.settingBtn);
+    //         this.tweenBack(this.infoBtn);
+    //     }
+    // }
 
     tweenToPosition(button: InteractiveBtn, index: number) {
         const targetY =  this.menuBtn.y + (index * (this.menuBtn.height))
@@ -215,7 +215,7 @@ export class UiPopups extends Phaser.GameObjects.Container {
             this.buttonMusic("buttonpressed");
         }, 0, true);
         
-        this.settingClose.setPosition(430, -300).setScale(0.8);
+        this.settingClose.setPosition(270, -270).setScale(0.8);
     
         popupBg.setOrigin(0.5);
         popupBg.setScale(0.9);

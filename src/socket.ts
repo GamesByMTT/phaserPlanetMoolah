@@ -31,9 +31,9 @@ export class SocketManager {
         token: this.authToken,
         gameId: "SL-PM",
       },
-      reconnectionAttempts: 5,
-      reconnectionDelay: 15000, // Initial delay between reconnection attempts (in ms)
-      reconnectionDelayMax: 10000,
+      // reconnectionAttempts: 5,
+      // reconnectionDelay: 15000, // Initial delay between reconnection attempts (in ms)
+      // reconnectionDelayMax: 10000,
     });
     this.setupEventListeners();
   }

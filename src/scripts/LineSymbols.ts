@@ -34,10 +34,10 @@ export default class LineSymbols extends Phaser.GameObjects.Container{
         leftSprite.setInteractive({ useHandCursor: true }).setDepth(5);
         numberContainer.add(leftSprite);
 
-        // For right side sprites
-        rightSprite = scene.add.sprite(gameConfig.scale.width / 3.19, yPosition + 100, `number${index}`).setScale(0.8).setOrigin(0.5);
-        rightSprite.setInteractive({ useHandCursor: true }).setDepth(5);
-        numberContainer.add(rightSprite);
+        // // For right side sprites
+        // rightSprite = scene.add.sprite(gameConfig.scale.width / 3.19, yPosition + 100, `number${index}`).setScale(0.8).setOrigin(0.5);
+        // rightSprite.setInteractive({ useHandCursor: true }).setDepth(5);
+        // numberContainer.add(rightSprite);
 
         // Add hover event listeners for the left sprite
         leftSprite.on("pointerover", () => {
@@ -48,14 +48,14 @@ export default class LineSymbols extends Phaser.GameObjects.Container{
             this.hideLines();
         });
 
-        // Add hover event listeners for the right sprite
-        rightSprite.on("pointerover", () => {
-            this.showLines(index);
-        });
+        // // Add hover event listeners for the right sprite
+        // rightSprite.on("pointerover", () => {
+        //     this.showLines(index);
+        // });
 
-        rightSprite.on("pointerout", () => {
-            this.hideLines();
-        });
+        // rightSprite.on("pointerout", () => {
+        //     this.hideLines();
+        // });
 
         return numberContainer;
     }

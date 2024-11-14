@@ -164,7 +164,9 @@ export default class MainLoader extends Scene {
                 console.warn(`Invalid sound configuration for key: ${key}`);
             }
         });
-        Globals.SceneHandler?.addScene('MainScene', MainScene, true);
+        setTimeout(() => {
+            Globals.SceneHandler?.addScene('MainScene', MainScene, true);
+        }, 200);
     }
 
     private drawRoundedRect(graphics: Phaser.GameObjects.Graphics, x: number, y: number, width: number, height: number, radius: number) {
