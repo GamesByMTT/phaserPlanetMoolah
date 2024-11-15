@@ -283,7 +283,7 @@ export class UiPopups extends Phaser.GameObjects.Container {
         this.exitBtn.disableInteractive();
 
         // Add text to the popup
-        const popupText = this.scene.add.text(0, -100, "Do you really want \n to exit?", {color:"#000000", fontSize: "80px", fontFamily: 'Anton', align:"center" }).setOrigin(0.5);
+        const popupText = this.scene.add.text(0, -100, "Do you really want \n to exit?", {color:"#000000", fontSize: "70px", fontFamily: 'Anton', align:"center" }).setOrigin(0.5);
         
         // Yes and No buttons
         const logoutButtonSprite = [

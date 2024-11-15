@@ -49,7 +49,7 @@ export class Slots extends Phaser.GameObjects.Container {
         const exampleSymbol = new Phaser.GameObjects.Sprite(scene, 0, 0, this.getRandomSymbolKey());
         this.symbolWidth = exampleSymbol.displayWidth/ 5.1;
         this.symbolHeight = exampleSymbol.displayHeight/5;
-        this.spacingX = this.symbolWidth * 5; // Add some spacing
+        this.spacingX = this.symbolWidth * 4.8; // Add some spacing
         this.spacingY = this.symbolHeight * 4.5; // Add some spacing
         // console.log(this.symbolHeight, "symbolHeightsymbolHeightsymbolHeight");
         
@@ -57,11 +57,11 @@ export class Slots extends Phaser.GameObjects.Container {
             x: gameConfig.scale.width /3.52,
             y: gameConfig.scale.height / 3.1   
         };
-        const totalSymbol = 4;
+        const totalSymbol = 5;
         const visibleSymbol = 3;
         const startIndex = 1;
         const initialYOffset = (totalSymbol - startIndex - visibleSymbol) * this.spacingY;
-        const totalSymbolsPerReel = 16; 
+        const totalSymbolsPerReel = 13; 
         for (let i = 0; i < 5; i++) { // 5 columns
             const reelContainer = new Phaser.GameObjects.Container(this.scene);
             this.reelContainers.push(reelContainer); // Store the container for future use
@@ -73,7 +73,7 @@ export class Slots extends Phaser.GameObjects.Container {
                 let slot = new Symbols(scene, symbolKey, { x: i, y: j }, reelContainer);
                 slot.symbol.setMask(new Phaser.Display.Masks.GeometryMask(scene, this.slotMask));
                 slot.symbol.setPosition(
-                    startPos.x + i * (this.spacingX + 11),
+                    startPos.x + i * (this.spacingX),
                     startPos.y + j * (11 + this.spacingY)
                 );
                 slot.symbol.setScale(0.75)
@@ -235,7 +235,7 @@ export class Slots extends Phaser.GameObjects.Container {
             rowArray.forEach((row: any) => {
                 if (typeof row === "string") {
                     const [y, x]: number[] = row.split(",").map((value) => parseInt(value));
-                    const elementId = ResultData.gameData.ResultReel[x][y];
+                    const elementId = ResultData.gameData.resultSymbols[x][y];
 
                     if (this.slotSymbols[y] && this.slotSymbols[y][x]) {
                         this.winMusic("winMusic");
@@ -247,6 +247,10 @@ export class Slots extends Phaser.GameObjects.Container {
                     }
                 }
             });
+        });
+
+        this.scene.time.delayedCall(2000, () => {
+            this.handleCascading();
         });
         
     }
@@ -312,6 +316,147 @@ export class Slots extends Phaser.GameObjects.Container {
         }
         return symbolKey;
     }
+
+    async handleCascading() {
+        if (ResultData.gameData.cascading && ResultData.gameData.cascading.length > 0) {
+            for (let cascadeIndex = 0; cascadeIndex < ResultData.gameData.cascading.length; cascadeIndex++) {
+                // Wait for the previous cascade to complete
+                await this.processCascadeStep(cascadeIndex);
+            }
+        }
+    }
+
+    private async playBlastAnimations(symbolsToFill: any[]): Promise<void> {
+        return new Promise<void>((resolve) => {
+            let blastCount = 0;
+            let totalBlasts = 0;
+    
+            // Count total blast animations needed
+            symbolsToFill.forEach((column, columnIndex) => {
+                if (Array.isArray(column)) {
+                    totalBlasts += column.length;
+                }
+            });
+    
+            if (totalBlasts === 0) {
+                resolve();
+                return;
+            }
+    
+            symbolsToFill.forEach((column, columnIndex) => {
+                if (Array.isArray(column)) {
+                    column.forEach((symbolId, rowIndex) => {
+                        const symbol = this.slotSymbols[columnIndex][rowIndex];
+                        
+                        // Create and play blast animation
+                        const blastSprite = this.scene.add.sprite(
+                            symbol.symbol.x,
+                            symbol.symbol.y,
+                            'blast_0'
+                        );
+                        
+                        blastSprite.setScale(0.75);
+                        blastSprite.setDepth(20);
+                        
+                        if (!this.scene.anims.exists('blast')) {
+                            this.scene.anims.create({
+                                key: 'blast',
+                                frames: Array.from({ length: 30 }, (_, i) => ({ key: `blast_${i}` })),
+                                frameRate: 20,
+                                repeat: 0
+                            });
+                        }
+    
+                        // Hide the original symbol
+                        symbol.symbol.setAlpha(0);
+    
+                        blastSprite.play('blast');
+                        blastSprite.on('animationcomplete', () => {
+                            blastSprite.destroy();
+                            blastCount++;
+                            if (blastCount === totalBlasts) {
+                                // Add a small delay before resolving
+                                this.scene.time.delayedCall(200, () => {
+                                    resolve();
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+        });
+    }
+    
+    private replaceSymbols(symbolsToFill: any[]) {
+        symbolsToFill.forEach((column, columnIndex) => {
+            if (Array.isArray(column) && column.length > 0) {
+                // Create new symbols above the reel
+                const newSymbols = column.map((newSymbolId, rowIndex) => {
+                    const symbol = this.slotSymbols[columnIndex][rowIndex];
+                    const newTextureKey = `slots${newSymbolId}_0`;
+                    
+                    // Reset symbol position to above the reel
+                    symbol.symbol.setTexture(newTextureKey);
+                    symbol.symbol.setAlpha(1);
+                    const originalY = symbol.symbol.y;
+                    symbol.symbol.y -= this.spacingY * 2; // Move it above the reel
+    
+                    // Create drop animation
+                    this.scene.tweens.add({
+                        targets: symbol.symbol,
+                        y: originalY,
+                        duration: 500,
+                        ease: 'Bounce.easeOut',
+                        delay: rowIndex * 100, // Stagger the drops
+                        onComplete: () => {
+                            // Create and play symbol animation after dropping
+                            const animKey = `symbol_anim_${newSymbolId}`;
+                            if (!this.scene.anims.exists(animKey)) {
+                                const textureKeys = Array.from(
+                                    { length: 13 }, 
+                                    (_, i) => `slots${newSymbolId}_${i}`
+                                );
+                                this.scene.anims.create({
+                                    key: animKey,
+                                    frames: textureKeys.map(key => ({ key })),
+                                    frameRate: 20,
+                                    repeat: -1
+                                });
+                            }
+                            symbol.symbol.play(animKey);
+                        }
+                    });
+                });
+            }
+        });
+    }
+    
+    // Modify processCascadeStep to include a delay between blast and replace
+    private async processCascadeStep(cascadeIndex: number) {
+        return new Promise<void>((resolve) => {
+            const currentCascade = ResultData.gameData.cascading[cascadeIndex];
+            if (!currentCascade) {
+                resolve();
+                return;
+            }
+    
+            const symbolsToFill = currentCascade.symbolsToFill;
+            
+            // Play blast animation for symbols that will be replaced
+            this.playBlastAnimations(symbolsToFill).then(() => {
+                // Add a delay before replacing symbols
+                this.scene.time.delayedCall(300, () => {
+                    // Replace symbols with dropping animation
+                    this.replaceSymbols(symbolsToFill);
+                    
+                    // Add delay before next cascade
+                    this.scene.time.delayedCall(2000, () => {
+                        resolve();
+                    });
+                });
+            });
+        });
+    }
     
 }
 
@@ -341,7 +486,7 @@ class Symbols {
         this.isMobile = scene.sys.game.device.os.android || scene.sys.game.device.os.iOS;
         // Load textures and create animation
         const textures: string[] = [];
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 13; i++) {
             textures.push(`${symbolKey}`);
         }  
         // console.log(textures, "textures");
@@ -377,8 +522,12 @@ class Symbols {
         if (this.index.y < 3) {
             let textureKeys: string[] = [];
             // Retrieve the elementId based on index
-            const elementId = ResultData.gameData.ResultReel[this.index.y][this.index.x];
-                for (let i = 0; i < 8; i++) {
+            const elementId = ResultData.gameData.resultSymbols[this.index.y][this.index.x];
+            if (typeof elementId === 'undefined') {
+                console.error('Invalid index access:', this.index.y, this.index.x);
+                return;
+            }
+                for (let i = 0; i < 13; i++) {
                     const textureKey = `slots${elementId}_${i}`;
                     // Check if the texture exists in cache
                     if (this.scene.textures.exists(textureKey)) {

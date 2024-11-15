@@ -45,6 +45,44 @@ interface SymbolType {
   description: string
 }
 
+interface WinningSymbol {
+  [index: number]: string[]; // Array of strings like '0,0', '1,1', etc.
+}
+
+interface CascadeStep {
+  currentWining: number;
+  lineToEmit: number[];
+  symbolsToFill: (number[] | [])[];
+  winingSymbols: string[][];
+}
+
+interface GameDataResult {
+  cascading: CascadeStep[];
+  BonusResult: any[];
+  freeSpinCount: number;
+  isCascading: boolean;
+  isFreeSpin: boolean;
+  BonusStopIndex: number;
+  resultSymbols: number[][];
+  ResultReel: any[][];
+  WinAmout: number;
+  freeSpins: {
+      count: number;
+      isNewAdded: boolean;
+  };
+  isBonus: boolean;
+  jackpot: number;
+  linesToEmit: any[];
+  symbolsToEmit: any[][];
+}
+
+interface PlayerData {
+  Balance: number;
+  haveWon: number;
+  currentWining: number;
+  currentBet: number;
+}
+
 // Bets: (15) [0.01, 0.02, 0.04, 0.05, 0.07, 0.1, 0.2, 0.4, 0.5, 0.7, 1, 1.5, 2, 2.5, 3]
 // BonusData: []
 // Lines: (12) [Array(5), Array(5), Array(5), Array(5), Array(5), Array(5), Array(5), Array(5), Array(5), Array(5), Array(5), Array(5)]
@@ -102,35 +140,35 @@ export const currentGameData = {
   musicMode: true,
 };
 
-export const ResultData = {
+export const ResultData: {
+  gameData: GameDataResult;
+  playerData: PlayerData;
+} = {
   gameData: {
-    BonusResult: [],
-    BonusStopIndex: -1,
-    ResultReel: [[]],
-    WinAmout: 0,
-    freeSpins: {
-      count: 0,
-      isNewAdded: false,
-    },
-    isBonus: false,
-    jackpot: 0,
-    linesToEmit: [],
-    symbolsToEmit: [],
+      cascading: [],
+      BonusResult: [],
+      freeSpinCount: 0,
+      isCascading: false,
+      isFreeSpin: false,
+      BonusStopIndex: -1,
+      resultSymbols: [],
+      ResultReel: [],
+      WinAmout: 0,
+      freeSpins: {
+          count: 0,
+          isNewAdded: false,
+      },
+      isBonus: false,
+      jackpot: 0,
+      linesToEmit: [],
+      symbolsToEmit: [],
   },
   playerData: {
-    Balance: 0,
-    haveWon: 0,
-    currentWining: 0,
-    currentBet: 0,
-  },
-};
-
-export const gambleData = {
-  gambleCards: {
-    exCards: [], // To store an array of card objects
-    highCard: {}, // To store the high card object
-    lowCard: {},
-  },
+      Balance: 0,
+      haveWon: 0,
+      currentWining: 0,
+      currentBet: 0,
+  }
 };
 
 export const gambleResult = {

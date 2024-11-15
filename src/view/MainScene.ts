@@ -52,7 +52,7 @@ export default class MainScene extends Scene {
             .setDepth(0)
             .setDisplaySize(1920, 1080);
         this.reelBg = this.add.sprite(width/2, height/1.98, "reelBg").setOrigin(0.5).setDepth(3)
-        this.gameLogo = this.add.sprite(width * 0.5, height * 0.08, "gameLogo").setOrigin(0.5).setDepth(3)
+        // this.gameLogo = this.add.sprite(width * 0.5, height * 0.08, "gameLogo").setOrigin(0.5).setDepth(3)
         this.bottom = this.add.sprite(width * 0.5, height * 0.89, "bottomLayer").setOrigin(0.5).setScale(0.9);
         // this.rightPin = this.add.sprite(gameConfig.scale.width * 0.8, gameConfig.scale.height/1.9, "rightPin").setOrigin(0.5)
         this.leftPin = this.add.sprite(gameConfig.scale.width * 0.2, gameConfig.scale.height/1.9, "leftPin").setOrigin(0.5) 
@@ -81,7 +81,7 @@ export default class MainScene extends Scene {
     private onResultCallBack() {
         this.uiContainer.onSpin(false);
         this.soundManager.stopSound("onSpin"); 
-        this.lineGenerator.showLines(ResultData.gameData.linesToEmit);
+        // this.lineGenerator.showLines(ResultData.gameData.cascading.lineToEmit);
     }
 
     private onSpinCallBack() {
@@ -121,7 +121,7 @@ export default class MainScene extends Scene {
         let betValue = (initData.gameData.Bets[currentGameData.currentBetIndex]) * 20;
         let winAmount = ResultData.gameData.WinAmout;
         let jackpot = ResultData.gameData.jackpot
-        this.uiContainer.currentBalanceText.updateLabelText(currentGameData.currentBalance.toFixed(2));
+        // this.uiContainer.currentBalanceText.updateLabelText(parseFloat(currentGameData.currentBalance).toFixed(2).toString());
         
         if (winAmount >= 10 * betValue && winAmount < 15 * betValue) {
             // Big Win Popup

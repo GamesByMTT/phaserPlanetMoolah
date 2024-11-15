@@ -65,7 +65,8 @@ export class UiContainer extends Phaser.GameObjects.Container {
                     currentGameData.currentBetIndex = 0;
                 }
                 const betAmount = initData.gameData.Bets[currentGameData.currentBetIndex];
-                const updatedBetAmount = betAmount * this.totalLines;
+                
+                const updatedBetAmount = betAmount * initData.gameData.linesApiData.length;
                 this.CurrentLineText.updateLabelText(betAmount);
                 this.CurrentBetText.updateLabelText(updatedBetAmount.toFixed(2).toString());
                 this.updateInsideText();
@@ -128,7 +129,7 @@ export class UiContainer extends Phaser.GameObjects.Container {
         // container.add(balancePanel);
         currentGameData.currentBalance = initData.playerData.Balance;
         const balanceText = this.scene.add.text(0, 50, "Balance", {fontFamily:"Anton", fontSize: "25px", color: "#d2bd6a"}).setOrigin(0.5)
-        this.currentBalanceText = new TextLabel(this.scene, 0, 0, currentGameData.currentBalance.toFixed(2), 35, "#ffffff").setOrigin(0.5);
+        this.currentBalanceText = new TextLabel(this.scene, 0, 0, currentGameData.currentBalance.toFixed(2).toString(), 35, "#ffffff").setOrigin(0.5);
         container.add([this.currentBalanceText, balanceText]);
     }
     /**

@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { Globals, ResultData, initData, gambleData, gambleResult } from "./scripts/Globals";
+import { Globals, ResultData, initData } from "./scripts/Globals";
 import Disconnection from "./scripts/Disconecction";
 // const socketUrl = process.env.SOCKET_URL || ""
 export class SocketManager {
@@ -73,18 +73,6 @@ export class SocketManager {
               ResultData.playerData = data.message.PlayerData;
               Globals.emitter?.Call("ResultData");
               console.log(ResultData);
-        }
-        if(data.id == "gambleInitData"){
-          gambleData.gambleCards = data.message
-        }
-        if(data.id == "gambleResultData"){
-          gambleResult.gamleResultData = data.message
-        
-        }
-        if(data.id == "GambleResult"){
-          gambleResult.gamleResultData = data.message
-          ResultData.playerData = data.message
-          Globals.emitter?.Call("GambleResult");
         }
       });
     });

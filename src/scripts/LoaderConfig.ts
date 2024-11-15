@@ -128,7 +128,7 @@ export const LoaderConfig = {
     // indicatorSprite: "src/sprites/SliderButton.png",
 
     slots0_0 :  "/src/sprites/Symbols/icon1/icon1.png",
-    slots1_0 :  "/src/sprites/Symbols/icon2/icon1.png",
+    slots1_0 :  "/src/sprites/Symbols/icon2/icon2.png",
     slots2_0 :  "/src/sprites/Symbols/icon3/icon3.png",
     slots3_0 :  "/src/sprites/Symbols/icon4/icon4.png",
     slots4_0 :  "/src/sprites/Symbols/icon5/icon5.png",
@@ -141,6 +141,24 @@ export const LoaderConfig = {
     slots11_0 :  "/src/sprites/Symbols/icon12/icon12.png",
     slots12_0 :  "/src/sprites/Symbols/icon13/icon12.png",
     slots13_0 :  "/src/sprites/Symbols/icon14/icon14.png",
+
+    blast_0: "src/sprites/blast-0.png",
+    blast_1: "src/sprites/blast-1.png",
+    blast_2: "src/sprites/blast-2.png",
+    blast_3: "src/sprites/blast-3.png",
+    blast_4: "src/sprites/blast-4.png",
+    blast_5: "src/sprites/blast-5.png",
+    blast_6: "src/sprites/blast-6.png",
+    blast_7: "src/sprites/blast-7.png",
+    blast_8: "src/sprites/blast-8.png",
+    blast_9: "src/sprites/blast-9.png",
+    blast_10: "src/sprites/blast-10.png",
+    blast_11: "src/sprites/blast-11.png",
+    blast_12: "src/sprites/blast-12.png",
+    blast_13: "src/sprites/blast-13.png",
+    blast_14: "src/sprites/blast-14.png",
+    
+
 
 
     winning0: "src/sprites/winning87.png",
