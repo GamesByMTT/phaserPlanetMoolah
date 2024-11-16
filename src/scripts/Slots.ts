@@ -22,8 +22,10 @@ export class Slots extends Phaser.GameObjects.Container {
     private spacingY: number;
     private reelContainers: Phaser.GameObjects.Container[] = [];
     private connectionTimeout!: Phaser.Time.TimerEvent;
+    private ufoSprites: Phaser.GameObjects.Sprite[] = []; // Array to store UFO sprites
     private reelTweens: Phaser.Tweens.Tween[] = []; // Array for reel tweens
     private totalVisibleSymbols: number = 3; // Number of visible symbols on the reel
+    private laserGroup!: Phaser.GameObjects.Group;
     constructor(scene: Phaser.Scene, uiContainer: UiContainer, callback: () => void, SoundManager : SoundManager) {
         super(scene);
 
@@ -86,6 +88,7 @@ export class Slots extends Phaser.GameObjects.Container {
             reelContainer.setPosition(reelContainer.x, -initialYOffset);
             this.add(reelContainer); 
         }
+        this.createUFOs();
     }
 
     getFilteredSymbolKeys(): string[] {
@@ -230,7 +233,6 @@ export class Slots extends Phaser.GameObjects.Container {
 
     playWinAnimations() {
         this.resultCallBack();
-        // this.stopWinningAnimations();
         ResultData.gameData.symbolsToEmit.forEach((rowArray: any) => {
             rowArray.forEach((row: any) => {
                 if (typeof row === "string") {
@@ -249,7 +251,7 @@ export class Slots extends Phaser.GameObjects.Container {
             });
         });
 
-        this.scene.time.delayedCall(2000, () => {
+        this.scene.time.delayedCall(1500, () => {
             this.handleCascading();
         });
         
@@ -317,6 +319,92 @@ export class Slots extends Phaser.GameObjects.Container {
         return symbolKey;
     }
 
+    private createLaser(startX: number, startY: number, endX: number, endY: number): Promise<void> {
+        return new Promise((resolve) => {
+            const laser = this.scene.add.graphics();
+            const glow = this.scene.add.graphics();
+            
+            const duration = 500;
+            let progress = 0;
+            const startWidth = 2;    // Width at the start point
+            const endWidth = 15;     // Width at the end point
+            
+            const animateLaser = () => {
+                progress += 0.07;
+                
+                if (progress >= 1) {
+                    this.scene.time.delayedCall(200, () => {
+                        laser.destroy();
+                        glow.destroy();
+                        resolve();
+                    });
+                    return;
+                }
+    
+                // Calculate current end point
+                const currentEndX = startX + (endX - startX) * progress;
+                const currentEndY = startY + (endY - startY) * progress;
+    
+                // Calculate angle of the laser
+                const angle = Phaser.Math.Angle.Between(startX, startY, currentEndX, currentEndY);
+    
+                // Clear previous drawings
+                laser.clear();
+                glow.clear();
+    
+                // Draw cone-shaped laser
+                const currentLength = Phaser.Math.Distance.Between(startX, startY, currentEndX, currentEndY);
+                const points: number[] = [];
+    
+                // Calculate points for the cone shape
+                const currentEndWidth = startWidth + (endWidth - startWidth) * progress;
+                
+                // Start point
+                points.push(startX, startY);
+    
+                // End points (creating width)
+                const perpAngle = angle + Math.PI / 2;
+                const halfWidth = currentEndWidth / 2;
+    
+                // Right point of the cone end
+                points.push(
+                    currentEndX + Math.cos(perpAngle) * halfWidth,
+                    currentEndY + Math.sin(perpAngle) * halfWidth
+                );
+    
+                // Left point of the cone end
+                points.push(
+                    currentEndX + Math.cos(perpAngle + Math.PI) * halfWidth,
+                    currentEndY + Math.sin(perpAngle + Math.PI) * halfWidth
+                );
+    
+                // Draw glow (larger cone)
+                glow.fillStyle(0xFFB6C1, 0.3);
+                glow.beginPath();
+                glow.moveTo(points[0], points[1]);
+                glow.lineTo(points[2], points[3]);
+                glow.lineTo(points[4], points[5]);
+                glow.closePath();
+                glow.fill();
+    
+                // Draw main laser
+                laser.fillStyle(0xFFB6C1, 0.7);
+                laser.beginPath();
+                laser.moveTo(points[0], points[1]);
+                laser.lineTo(points[2], points[3]);
+                laser.lineTo(points[4], points[5]);
+                laser.closePath();
+                laser.fill();
+    
+                // Continue animation
+                this.scene.time.delayedCall(16, animateLaser);
+            };
+    
+            // Start animation
+            animateLaser();
+        });
+    }
+
     async handleCascading() {
         if (ResultData.gameData.cascading && ResultData.gameData.cascading.length > 0) {
             for (let cascadeIndex = 0; cascadeIndex < ResultData.gameData.cascading.length; cascadeIndex++) {
@@ -327,7 +415,7 @@ export class Slots extends Phaser.GameObjects.Container {
     }
 
     private async playBlastAnimations(symbolsToFill: any[]): Promise<void> {
-        return new Promise<void>((resolve) => {
+        return new Promise<void>(async (resolve) => {
             let blastCount = 0;
             let totalBlasts = 0;
     
@@ -343,94 +431,210 @@ export class Slots extends Phaser.GameObjects.Container {
                 return;
             }
     
+            // Create array of promises for animations
+            const animationPromises: Promise<void>[] = [];
+    
             symbolsToFill.forEach((column, columnIndex) => {
                 if (Array.isArray(column)) {
                     column.forEach((symbolId, rowIndex) => {
                         const symbol = this.slotSymbols[columnIndex][rowIndex];
                         
-                        // Create and play blast animation
-                        const blastSprite = this.scene.add.sprite(
-                            symbol.symbol.x,
-                            symbol.symbol.y,
-                            'blast_0'
-                        );
-                        
-                        blastSprite.setScale(0.75);
-                        blastSprite.setDepth(20);
-                        
-                        if (!this.scene.anims.exists('blast')) {
-                            this.scene.anims.create({
-                                key: 'blast',
-                                frames: Array.from({ length: 30 }, (_, i) => ({ key: `blast_${i}` })),
-                                frameRate: 20,
-                                repeat: 0
-                            });
-                        }
-    
-                        // Hide the original symbol
-                        symbol.symbol.setAlpha(0);
-    
-                        blastSprite.play('blast');
-                        blastSprite.on('animationcomplete', () => {
-                            blastSprite.destroy();
-                            blastCount++;
-                            if (blastCount === totalBlasts) {
-                                // Add a small delay before resolving
-                                this.scene.time.delayedCall(200, () => {
-                                    resolve();
+                        if (symbolId === 12) {
+                            // Handle symbol 12 differently
+                            const currentTexture = symbol.symbol.texture.key;
+                            const cowType = this.getCowType(currentTexture);
+                            
+                            // Create pull animation from UFO in same column
+                            const ufo = this.ufoSprites[columnIndex];
+                            
+                            // Create and play pull animation
+                            if (!this.scene.anims.exists('pullAnimation')) {
+                                this.scene.anims.create({
+                                    key: 'pullAnimation',
+                                    frames: Array.from({ length: 18 }, (_, i) => ({ key: `pullAnim${i}` })),
+                                    frameRate: 20,
+                                    repeat: 0
                                 });
                             }
-                        });
+    
+                            // Create pull effect sprite
+                            const pullSprite = this.scene.add.sprite(
+                                ufo.x,
+                                ufo.y + 20,
+                                'pullAnim0'
+                            ).setDepth(15);
+    
+                            // Create cow animation if it doesn't exist
+                            const cowAnimKey = `${cowType}Animation`;
+                            if (!this.scene.anims.exists(cowAnimKey)) {
+                                this.scene.anims.create({
+                                    key: cowAnimKey,
+                                    frames: Array.from({ length: 11 }, (_, i) => ({ 
+                                        key: `${cowType}12_${i}` 
+                                    })),
+                                    frameRate: 20,
+                                    repeat: 0
+                                });
+                            }
+    
+                            // Create promise for both animations
+                            const animPromise = new Promise<void>((animResolve) => {
+                                let animationsCompleted = 0;
+                                
+                                // Play pull animation
+                                pullSprite.play('pullAnimation');
+                                pullSprite.on('animationcomplete', () => {
+                                    pullSprite.destroy();
+                                    animationsCompleted++;
+                                    if (animationsCompleted === 2) animResolve();
+                                });
+    
+                                // Play cow animation
+                                symbol.symbol.play(cowAnimKey);
+                                symbol.symbol.on('animationcomplete', () => {
+                                    animationsCompleted++;
+                                    if (animationsCompleted === 2) animResolve();
+                                });
+                            });
+    
+                            animationPromises.push(animPromise);
+                        } else {
+                            // Regular blast animation for non-12 symbols
+                            const ufoIndex = Phaser.Math.Between(0, this.ufoSprites.length - 1);
+                            const ufo = this.ufoSprites[ufoIndex];
+    
+                            const laserPromise = this.createLaser(
+                                ufo.x,
+                                ufo.y + 20,
+                                symbol.symbol.x,
+                                symbol.symbol.y
+                            ).then(() => {
+                                // Create and play blast animation
+                                const blastSprite = this.scene.add.sprite(
+                                    symbol.symbol.x,
+                                    symbol.symbol.y,
+                                    'blast_0'
+                                ).setScale(0.75).setDepth(20);
+    
+                                return new Promise<void>((blastResolve) => {
+                                    if (!this.scene.anims.exists('blast')) {
+                                        this.scene.anims.create({
+                                            key: 'blast',
+                                            frames: Array.from({ length: 30 }, (_, i) => ({ key: `blast_${i}` })),
+                                            frameRate: 20,
+                                            repeat: 0
+                                        });
+                                    }
+    
+                                    symbol.symbol.setAlpha(0);
+                                    blastSprite.play('blast');
+                                    blastSprite.on('animationcomplete', () => {
+                                        blastSprite.destroy();
+                                        blastCount++;
+                                        blastResolve();
+                                    });
+                                });
+                            });
+    
+                            animationPromises.push(laserPromise);
+                        }
                     });
                 }
             });
+    
+            // Wait for all animations to complete
+            await Promise.all(animationPromises);
+            resolve();
         });
+    }
+    
+    // Helper method to determine cow type
+    private getCowType(textureKey: string): string {
+        if (textureKey.includes('blackCow')) return 'blackCow';
+        if (textureKey.includes('brownCow')) return 'brownCow';
+        if (textureKey.includes('whiteCow')) return 'whiteCow';
+        return 'blackCow'; // default
     }
     
     private replaceSymbols(symbolsToFill: any[]) {
         symbolsToFill.forEach((column, columnIndex) => {
             if (Array.isArray(column) && column.length > 0) {
-                // Create new symbols above the reel
-                const newSymbols = column.map((newSymbolId, rowIndex) => {
+                column.forEach((newSymbolId, rowIndex) => {
                     const symbol = this.slotSymbols[columnIndex][rowIndex];
-                    const newTextureKey = `slots${newSymbolId}_0`;
                     
-                    // Reset symbol position to above the reel
-                    symbol.symbol.setTexture(newTextureKey);
+                    // Reset alpha and set initial position
                     symbol.symbol.setAlpha(1);
                     const originalY = symbol.symbol.y;
-                    symbol.symbol.y -= this.spacingY * 2; // Move it above the reel
+                    symbol.symbol.y -= this.spacingY * 2;
     
-                    // Create drop animation
-                    this.scene.tweens.add({
-                        targets: symbol.symbol,
-                        y: originalY,
-                        duration: 500,
-                        ease: 'Bounce.easeOut',
-                        delay: rowIndex * 100, // Stagger the drops
-                        onComplete: () => {
-                            // Create and play symbol animation after dropping
-                            const animKey = `symbol_anim_${newSymbolId}`;
-                            if (!this.scene.anims.exists(animKey)) {
-                                const textureKeys = Array.from(
-                                    { length: 13 }, 
-                                    (_, i) => `slots${newSymbolId}_${i}`
-                                );
-                                this.scene.anims.create({
-                                    key: animKey,
-                                    frames: textureKeys.map(key => ({ key })),
-                                    frameRate: 20,
-                                    repeat: -1
-                                });
+                    if (newSymbolId === 12) {
+                        // Handle cow symbols
+                        const cowVariations = ['blackCow', 'brownCow', 'whiteCow'];
+                        const randomCowType = cowVariations[Phaser.Math.Between(0, cowVariations.length - 1)];
+                        const baseTexture = `${randomCowType}12_0`;
+                        
+                        // Set initial texture
+                        symbol.symbol.setTexture(baseTexture);
+    
+                        // Create drop animation
+                        this.scene.tweens.add({
+                            targets: symbol.symbol,
+                            y: originalY,
+                            duration: 500,
+                            ease: 'Bounce.easeOut',
+                            delay: rowIndex * 100,
+                            onComplete: () => {
+                                // Create and play idle animation for the cow
+                                const cowAnimKey = `${randomCowType}Idle_${columnIndex}_${rowIndex}`;
+                                if (!this.scene.anims.exists(cowAnimKey)) {
+                                    this.scene.anims.create({
+                                        key: cowAnimKey,
+                                        frames: Array.from({ length: 11 }, (_, i) => ({
+                                            key: `${randomCowType}12_${i}`
+                                        })),
+                                        frameRate: 10,
+                                        repeat: -1
+                                    });
+                                }
+                                symbol.symbol.play(cowAnimKey);
                             }
-                            symbol.symbol.play(animKey);
-                        }
-                    });
+                        });
+                    } else {
+                        // Handle regular symbols
+                        const newTextureKey = `slots${newSymbolId}_0`;
+                        symbol.symbol.setTexture(newTextureKey);
+    
+                        this.scene.tweens.add({
+                            targets: symbol.symbol,
+                            y: originalY,
+                            duration: 500,
+                            ease: 'Bounce.easeOut',
+                            delay: rowIndex * 100,
+                            onComplete: () => {
+                                const animKey = `symbol_anim_${newSymbolId}_${columnIndex}_${rowIndex}`;
+                                if (!this.scene.anims.exists(animKey)) {
+                                    const textureKeys = Array.from(
+                                        { length: 13 }, 
+                                        (_, i) => `slots${newSymbolId}_${i}`
+                                    );
+                                    this.scene.anims.create({
+                                        key: animKey,
+                                        frames: textureKeys.map(key => ({ key })),
+                                        frameRate: 20,
+                                        repeat: -1
+                                    });
+                                }
+                                symbol.symbol.play(animKey);
+                            }
+                        });
+                    }
+    
+                    // Store the symbol ID for future reference
+                    symbol.currentSymbolId = newSymbolId;
                 });
             }
         });
     }
-    
     // Modify processCascadeStep to include a delay between blast and replace
     private async processCascadeStep(cascadeIndex: number) {
         return new Promise<void>((resolve) => {
@@ -450,7 +654,7 @@ export class Slots extends Phaser.GameObjects.Container {
                     this.replaceSymbols(symbolsToFill);
                     
                     // Add delay before next cascade
-                    this.scene.time.delayedCall(2000, () => {
+                    this.scene.time.delayedCall(1000, () => {
                         resolve();
                     });
                 });
@@ -458,6 +662,85 @@ export class Slots extends Phaser.GameObjects.Container {
         });
     }
     
+
+    private createUFOs() {
+        // Create UFO animation if it doesn't exist
+        if (!this.scene.anims.exists('ufoAnimation')) {
+            const ufoFrames = Array.from({ length: 16 }, (_, i) => ({ key: `ufo${i}` }));
+            this.scene.anims.create({
+                key: 'ufoAnimation',
+                frames: ufoFrames,
+                frameRate: 15,
+                repeat: -1
+            });
+        }
+    
+        // Different configurations for each UFO
+        const ufoConfigs = [
+            { bounceHeight: 25, duration: 1200, delay: 0, cowSprite: 'cow1_0' },     // First UFO
+            { bounceHeight: 30, duration: 1500, delay: 300, cowSprite: 'cow2_0' },   // Second UFO
+            { bounceHeight: 20, duration: 1000, delay: 600, cowSprite: 'cow3_0' },   // Third UFO
+            { bounceHeight: 35, duration: 1300, delay: 900, cowSprite: 'cow4_0' },   // Fourth UFO
+            { bounceHeight: 27, duration: 1400, delay: 1200, cowSprite: 'cow5_0' }   // Fifth UFO
+        ];
+    
+        // Calculate positions based on reel positions
+        for (let i = 0; i < 5; i++) {
+            const reelX = this.slotSymbols[i][0].symbol.x;
+            const reelY = this.slotSymbols[i][0].symbol.y;
+            const config = ufoConfigs[i];
+    
+            // Create UFO sprite above the reel
+            const ufo = this.scene.add.sprite(reelX, reelY - 170, 'ufo0')
+                .setScale(0.2);
+
+            const cow = this.scene.add.sprite(reelX-5, reelY-215, config.cowSprite) // Adjust Y offset as needed
+            .setScale(0.25); // Adjust scale as needed
+    
+            // Main bounce animation
+            this.scene.tweens.add({
+                targets: [ufo, cow],
+                y: `+=${config.bounceHeight}`,
+                duration: config.duration,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+                delay: config.delay
+            });
+            // Play UFO frame animation with different speeds
+            ufo.play({
+                key: 'ufoAnimation',
+                frameRate: 15 + i, // Slightly different speeds for each UFO
+                repeat: -1
+            });
+    
+            // Store UFO reference
+            this.ufoSprites.push(ufo);
+            
+            // Add to the scene but outside the mask
+            this.add(ufo);
+        }
+    }
+
+    updateUFOPositions() {
+        this.ufoSprites.forEach((ufo, index) => {
+            const reelX = this.slotSymbols[index][0].symbol.x;
+            const reelY = this.slotSymbols[index][0].symbol.y;
+            ufo.x = reelX;
+            // Keep the Y position relative to the current bounce animation
+        });
+    }
+
+    // Optional: Add method to stop/start UFO animations
+    toggleUFOAnimations(play: boolean) {
+        this.ufoSprites.forEach(ufo => {
+            if (play) {
+                ufo.play('ufoAnimation');
+            } else {
+                ufo.stop();
+            }
+        });
+    }
 }
 
 // @Sybols CLass
@@ -514,43 +797,67 @@ class Symbols {
     }
     stopAnimation() {
         if (this.symbol.anims.isPlaying) {
-            console.log("check playing in Symbol Class or not");
             this.symbol.anims.stop();
         } 
     }
     endTween() {
         if (this.index.y < 3) {
-            let textureKeys: string[] = [];
-            // Retrieve the elementId based on index
             const elementId = ResultData.gameData.resultSymbols[this.index.y][this.index.x];
             if (typeof elementId === 'undefined') {
                 console.error('Invalid index access:', this.index.y, this.index.x);
                 return;
             }
+    
+            if (elementId === 12) {
+                // Handle cow symbols
+                const cowVariations = ['blackCow', 'brownCow', 'whiteCow'];
+                const randomCowType = cowVariations[Phaser.Math.Between(0, cowVariations.length - 1)];
+                const baseTexture = `${randomCowType}12_0`;
+                
+                this.symbol.setTexture(baseTexture);
+                
+                // Create and play cow animation
+                const cowAnimKey = `${randomCowType}Idle_${this.index.x}_${this.index.y}`;
+                if (!this.scene.anims.exists(cowAnimKey)) {
+                    this.scene.anims.create({
+                        key: cowAnimKey,
+                        frames: Array.from({ length: 11 }, (_, i) => ({
+                            key: `${randomCowType}12_${i}`
+                        })),
+                        frameRate: 10,
+                        repeat: -1
+                    });
+                }
+                this.symbol.play(cowAnimKey);
+            } else {
+                // Handle regular symbols
+                let textureKeys: string[] = [];
                 for (let i = 0; i < 13; i++) {
                     const textureKey = `slots${elementId}_${i}`;
-                    // Check if the texture exists in cache
                     if (this.scene.textures.exists(textureKey)) {
-                        textureKeys.push(textureKey);                        
-                    } 
+                        textureKeys.push(textureKey);
+                    }
                 }
-                // Check if we have texture keys to set
-                    if (textureKeys.length > 0) {
-                    // Create animation with the collected texture keys
+    
+                if (textureKeys.length > 0) {
+                    const animKey = `symbol_anim_${elementId}_${this.index.x}_${this.index.y}`;
+                    if (!this.scene.anims.exists(animKey)) {
                         this.scene.anims.create({
-                            key: `symbol_anim_${elementId}`,
+                            key: animKey,
                             frames: textureKeys.map(key => ({ key })),
                             frameRate: 20,
                             repeat: -1
                         });
-                    // Set the texture to the first key and start the animation
-                        this.symbol.setTexture(textureKeys[0]);           
                     }
-                    this.startMoving = true; 
+                    this.symbol.setTexture(textureKeys[0]);
+                    this.symbol.play(animKey);
+                }
+            }
+            this.startMoving = true;
         }
-        // Stop moving and start tweening the sprite's position
-        this.scene.time.delayedCall(10, () => { // Example: 50ms delay
-            this.startMoving = false; 
+    
+        this.scene.time.delayedCall(10, () => {
+            this.startMoving = false;
         });
     }
     
