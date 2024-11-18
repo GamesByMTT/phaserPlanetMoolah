@@ -408,7 +408,11 @@ export class Slots extends Phaser.GameObjects.Container {
     async handleCascading() {
         if (ResultData.gameData.cascading && ResultData.gameData.cascading.length > 0) {
             for (let cascadeIndex = 0; cascadeIndex < ResultData.gameData.cascading.length; cascadeIndex++) {
-                // Wait for the previous cascade to complete
+                // Wait for 1500ms before starting next cascade
+                if (cascadeIndex > 0) {
+                    await new Promise(resolve => this.scene.time.delayedCall(1500, resolve));
+                }
+                // Process current cascade step
                 await this.processCascadeStep(cascadeIndex);
             }
         }
@@ -416,138 +420,119 @@ export class Slots extends Phaser.GameObjects.Container {
 
     private async playBlastAnimations(symbolsToFill: any[]): Promise<void> {
         return new Promise<void>(async (resolve) => {
-            let blastCount = 0;
-            let totalBlasts = 0;
+            const regularSymbols: { columnIndex: number; rowIndex: number }[] = [];
+            const cowSymbols: { columnIndex: number; rowIndex: number }[] = [];
     
-            // Count total blast animations needed
-            symbolsToFill.forEach((column, columnIndex) => {
-                if (Array.isArray(column)) {
-                    totalBlasts += column.length;
+            // First, identify which symbols need to be replaced and their current values
+            for (let columnIndex = 0; columnIndex < ResultData.gameData.resultSymbols[0].length; columnIndex++) {
+                if (symbolsToFill[columnIndex] && symbolsToFill[columnIndex].length > 0) {
+                    for (let rowIndex = 0; rowIndex < symbolsToFill[columnIndex].length; rowIndex++) {
+                        // Get the current symbol in the position that will be replaced
+                        const currentSymbol = ResultData.gameData.resultSymbols[rowIndex][columnIndex];
+                        
+                        // If the current symbol is 12 (cow), use pull animation
+                        if (currentSymbol === 12) {
+                            cowSymbols.push({ columnIndex, rowIndex });
+                        } else {
+                            regularSymbols.push({ columnIndex, rowIndex });
+                        }
+                    }
                 }
-            });
-    
-            if (totalBlasts === 0) {
-                resolve();
-                return;
             }
     
-            // Create array of promises for animations
-            const animationPromises: Promise<void>[] = [];
-    
+            // Update resultSymbols with new values
             symbolsToFill.forEach((column, columnIndex) => {
                 if (Array.isArray(column)) {
-                    column.forEach((symbolId, rowIndex) => {
-                        const symbol = this.slotSymbols[columnIndex][rowIndex];
-                        
-                        if (symbolId === 12) {
-                            // Handle symbol 12 differently
-                            const currentTexture = symbol.symbol.texture.key;
-                            const cowType = this.getCowType(currentTexture);
-                            
-                            // Create pull animation from UFO in same column
-                            const ufo = this.ufoSprites[columnIndex];
-                            
-                            // Create and play pull animation
-                            if (!this.scene.anims.exists('pullAnimation')) {
-                                this.scene.anims.create({
-                                    key: 'pullAnimation',
-                                    frames: Array.from({ length: 18 }, (_, i) => ({ key: `pullAnim${i}` })),
-                                    frameRate: 20,
-                                    repeat: 0
-                                });
-                            }
-    
-                            // Create pull effect sprite
-                            const pullSprite = this.scene.add.sprite(
-                                ufo.x,
-                                ufo.y + 20,
-                                'pullAnim0'
-                            ).setDepth(15);
-    
-                            // Create cow animation if it doesn't exist
-                            const cowAnimKey = `${cowType}Animation`;
-                            if (!this.scene.anims.exists(cowAnimKey)) {
-                                this.scene.anims.create({
-                                    key: cowAnimKey,
-                                    frames: Array.from({ length: 11 }, (_, i) => ({ 
-                                        key: `${cowType}12_${i}` 
-                                    })),
-                                    frameRate: 20,
-                                    repeat: 0
-                                });
-                            }
-    
-                            // Create promise for both animations
-                            const animPromise = new Promise<void>((animResolve) => {
-                                let animationsCompleted = 0;
-                                
-                                // Play pull animation
-                                pullSprite.play('pullAnimation');
-                                pullSprite.on('animationcomplete', () => {
-                                    pullSprite.destroy();
-                                    animationsCompleted++;
-                                    if (animationsCompleted === 2) animResolve();
-                                });
-    
-                                // Play cow animation
-                                symbol.symbol.play(cowAnimKey);
-                                symbol.symbol.on('animationcomplete', () => {
-                                    animationsCompleted++;
-                                    if (animationsCompleted === 2) animResolve();
-                                });
-                            });
-    
-                            animationPromises.push(animPromise);
-                        } else {
-                            // Regular blast animation for non-12 symbols
-                            const ufoIndex = Phaser.Math.Between(0, this.ufoSprites.length - 1);
-                            const ufo = this.ufoSprites[ufoIndex];
-    
-                            const laserPromise = this.createLaser(
-                                ufo.x,
-                                ufo.y + 20,
-                                symbol.symbol.x,
-                                symbol.symbol.y
-                            ).then(() => {
-                                // Create and play blast animation
-                                const blastSprite = this.scene.add.sprite(
-                                    symbol.symbol.x,
-                                    symbol.symbol.y,
-                                    'blast_0'
-                                ).setScale(0.75).setDepth(20);
-    
-                                return new Promise<void>((blastResolve) => {
-                                    if (!this.scene.anims.exists('blast')) {
-                                        this.scene.anims.create({
-                                            key: 'blast',
-                                            frames: Array.from({ length: 30 }, (_, i) => ({ key: `blast_${i}` })),
-                                            frameRate: 20,
-                                            repeat: 0
-                                        });
-                                    }
-    
-                                    symbol.symbol.setAlpha(0);
-                                    blastSprite.play('blast');
-                                    blastSprite.on('animationcomplete', () => {
-                                        blastSprite.destroy();
-                                        blastCount++;
-                                        blastResolve();
-                                    });
-                                });
-                            });
-    
-                            animationPromises.push(laserPromise);
+                    column.forEach((newSymbol, rowIndex) => {
+                        if (ResultData.gameData.resultSymbols[rowIndex]) {
+                            ResultData.gameData.resultSymbols[rowIndex][columnIndex] = newSymbol;
                         }
                     });
                 }
             });
     
-            // Wait for all animations to complete
-            await Promise.all(animationPromises);
+            const processPromises = [];
+    
+            // Play pull animations for cow symbols
+            for (const cowSymbol of cowSymbols) {
+                processPromises.push(this.playPullAnimation(cowSymbol.columnIndex, cowSymbol.rowIndex));
+            }
+    
+            // Play laser and blast animations for regular symbols
+            for (const regularSymbol of regularSymbols) {
+                processPromises.push(this.playLaserAndBlastAnimation(regularSymbol.columnIndex, regularSymbol.rowIndex));
+            }
+    
+            await Promise.all(processPromises);
             resolve();
+        });
+    }  
+    
+    private playLaserAndBlastAnimation(columnIndex: number, rowIndex: number): Promise<void> {
+        return new Promise<void>(async (resolve) => {
+            const symbol = this.slotSymbols[columnIndex][rowIndex];
+            
+            // Find a random UFO that's not above the current column
+            let ufoIndex;
+            do {
+                ufoIndex = Phaser.Math.Between(0, this.ufoSprites.length - 1);
+            } while (ufoIndex === columnIndex);
+    
+            const ufo = this.ufoSprites[ufoIndex];
+    
+            // Play laser animation
+            await this.createLaser(ufo.x, ufo.y + 20, symbol.symbol.x, symbol.symbol.y);
+    
+            // Play blast animation
+            const blastSprite = this.scene.add.sprite(symbol.symbol.x, symbol.symbol.y, 'blast_0')
+                .setScale(0.75)
+                .setDepth(20);
+    
+            if (!this.scene.anims.exists('blast')) {
+                this.scene.anims.create({
+                    key: 'blast',
+                    frames: Array.from({ length: 30 }, (_, i) => ({ key: `blast_${i}` })),
+                    frameRate: 20,
+                    repeat: 0
+                });
+            }
+    
+            symbol.symbol.setAlpha(0);
+            blastSprite.play('blast');
+            blastSprite.on('animationcomplete', () => {
+                blastSprite.destroy();
+                resolve();
+            });
         });
     }
     
+    private playPullAnimation(columnIndex: number, rowIndex: number): Promise<void> {
+        return new Promise<void>((resolve) => {
+            const symbol = this.slotSymbols[columnIndex][rowIndex];
+            const ufo = this.ufoSprites[columnIndex]; // Use UFO from same column
+    
+            // Create pull animation
+            if (!this.scene.anims.exists('pullAnimation')) {
+                this.scene.anims.create({
+                    key: 'pullAnimation',
+                    frames: Array.from({ length: 18 }, (_, i) => ({ key: `pullAnim${i}` })),
+                    frameRate: 20,
+                    repeat: 0
+                });
+            }
+    
+            // Create pull sprite
+            const pullSprite = this.scene.add.sprite(ufo.x, ufo.y + 20, 'pullAnim0')
+                .setDepth(15);
+    
+            symbol.symbol.setAlpha(0);
+            pullSprite.play('pullAnimation');
+            pullSprite.on('animationcomplete', () => {
+                pullSprite.destroy();
+                resolve();
+            });
+        });
+    }
     // Helper method to determine cow type
     private getCowType(textureKey: string): string {
         if (textureKey.includes('blackCow')) return 'blackCow';
@@ -556,27 +541,20 @@ export class Slots extends Phaser.GameObjects.Container {
         return 'blackCow'; // default
     }
     
-    private replaceSymbols(symbolsToFill: any[]) {
+    private replaceSymbols(symbolsToFill: any[]): Promise<void[]> {
+        const promises: Promise<void>[] = [];
+    
         symbolsToFill.forEach((column, columnIndex) => {
-            if (Array.isArray(column) && column.length > 0) {
+            if (Array.isArray(column)) {
                 column.forEach((newSymbolId, rowIndex) => {
                     const symbol = this.slotSymbols[columnIndex][rowIndex];
                     
-                    // Reset alpha and set initial position
+                    // Reset symbol properties
                     symbol.symbol.setAlpha(1);
                     const originalY = symbol.symbol.y;
                     symbol.symbol.y -= this.spacingY * 2;
     
-                    if (newSymbolId === 12) {
-                        // Handle cow symbols
-                        const cowVariations = ['blackCow', 'brownCow', 'whiteCow'];
-                        const randomCowType = cowVariations[Phaser.Math.Between(0, cowVariations.length - 1)];
-                        const baseTexture = `${randomCowType}12_0`;
-                        
-                        // Set initial texture
-                        symbol.symbol.setTexture(baseTexture);
-    
-                        // Create drop animation
+                    const promise = new Promise<void>((resolve) => {
                         this.scene.tweens.add({
                             targets: symbol.symbol,
                             y: originalY,
@@ -584,84 +562,87 @@ export class Slots extends Phaser.GameObjects.Container {
                             ease: 'Bounce.easeOut',
                             delay: rowIndex * 100,
                             onComplete: () => {
-                                // Create and play idle animation for the cow
-                                const cowAnimKey = `${randomCowType}Idle_${columnIndex}_${rowIndex}`;
-                                if (!this.scene.anims.exists(cowAnimKey)) {
-                                    this.scene.anims.create({
-                                        key: cowAnimKey,
-                                        frames: Array.from({ length: 11 }, (_, i) => ({
-                                            key: `${randomCowType}12_${i}`
-                                        })),
-                                        frameRate: 10,
-                                        repeat: -1
-                                    });
+                                if (newSymbolId === 12) {
+                                    // Handle cow symbols
+                                    const cowVariations = ['blackCow', 'brownCow', 'whiteCow'];
+                                    const randomCowType = cowVariations[Phaser.Math.Between(0, cowVariations.length - 1)];
+                                    const baseTexture = `${randomCowType}12_0`;
+                                    symbol.symbol.setTexture(baseTexture);
+    
+                                    const cowAnimKey = `${randomCowType}Idle_${columnIndex}_${rowIndex}`;
+                                    if (!this.scene.anims.exists(cowAnimKey)) {
+                                        this.scene.anims.create({
+                                            key: cowAnimKey,
+                                            frames: Array.from({ length: 11 }, (_, i) => ({
+                                                key: `${randomCowType}12_${i}`
+                                            })),
+                                            frameRate: 10,
+                                            repeat: -1
+                                        });
+                                    }
+                                    symbol.symbol.play(cowAnimKey);
+                                } else {
+                                    // Handle regular symbols
+                                    const newTextureKey = `slots${newSymbolId}_0`;
+                                    symbol.symbol.setTexture(newTextureKey);
+                                    
+                                    const animKey = `symbol_anim_${newSymbolId}_${columnIndex}_${rowIndex}`;
+                                    if (!this.scene.anims.exists(animKey)) {
+                                        const textureKeys = Array.from({ length: 13 }, (_, i) => `slots${newSymbolId}_${i}`);
+                                        this.scene.anims.create({
+                                            key: animKey,
+                                            frames: textureKeys.map(key => ({ key })),
+                                            frameRate: 20,
+                                            repeat: -1
+                                        });
+                                    }
+                                    symbol.symbol.play(animKey);
                                 }
-                                symbol.symbol.play(cowAnimKey);
+                                resolve();
                             }
                         });
-                    } else {
-                        // Handle regular symbols
-                        const newTextureKey = `slots${newSymbolId}_0`;
-                        symbol.symbol.setTexture(newTextureKey);
-    
-                        this.scene.tweens.add({
-                            targets: symbol.symbol,
-                            y: originalY,
-                            duration: 500,
-                            ease: 'Bounce.easeOut',
-                            delay: rowIndex * 100,
-                            onComplete: () => {
-                                const animKey = `symbol_anim_${newSymbolId}_${columnIndex}_${rowIndex}`;
-                                if (!this.scene.anims.exists(animKey)) {
-                                    const textureKeys = Array.from(
-                                        { length: 13 }, 
-                                        (_, i) => `slots${newSymbolId}_${i}`
-                                    );
-                                    this.scene.anims.create({
-                                        key: animKey,
-                                        frames: textureKeys.map(key => ({ key })),
-                                        frameRate: 20,
-                                        repeat: -1
-                                    });
-                                }
-                                symbol.symbol.play(animKey);
-                            }
-                        });
-                    }
-    
-                    // Store the symbol ID for future reference
-                    symbol.currentSymbolId = newSymbolId;
+                    });
+                    promises.push(promise);
                 });
             }
         });
+    
+        return Promise.all(promises);
     }
-    // Modify processCascadeStep to include a delay between blast and replace
+
+
     private async processCascadeStep(cascadeIndex: number) {
-        return new Promise<void>((resolve) => {
+        return new Promise<void>(async (resolve) => {
             const currentCascade = ResultData.gameData.cascading[cascadeIndex];
             if (!currentCascade) {
                 resolve();
                 return;
             }
-    
             const symbolsToFill = currentCascade.symbolsToFill;
+    
+            // First, play blast/pull animations
+            await this.playBlastAnimations(symbolsToFill);
             
-            // Play blast animation for symbols that will be replaced
-            this.playBlastAnimations(symbolsToFill).then(() => {
-                // Add a delay before replacing symbols
-                this.scene.time.delayedCall(300, () => {
-                    // Replace symbols with dropping animation
-                    this.replaceSymbols(symbolsToFill);
-                    
-                    // Add delay before next cascade
-                    this.scene.time.delayedCall(1000, () => {
-                        resolve();
+            // Add a small delay
+            await new Promise(resolve => this.scene.time.delayedCall(300, resolve));
+            
+            // Then replace symbols with dropping animation
+            await this.replaceSymbols(symbolsToFill);
+    
+            // Update the ResultData.gameData.resultSymbols after each cascade
+            symbolsToFill.forEach((column, columnIndex) => {
+                if (Array.isArray(column)) {
+                    column.forEach((newSymbol, rowIndex) => {
+                        if (ResultData.gameData.resultSymbols[rowIndex]) {
+                            ResultData.gameData.resultSymbols[rowIndex][columnIndex] = newSymbol;
+                        }
                     });
-                });
+                }
             });
+    
+            resolve();
         });
     }
-    
 
     private createUFOs() {
         // Create UFO animation if it doesn't exist
@@ -828,7 +809,7 @@ class Symbols {
                         repeat: -1
                     });
                 }
-                this.symbol.play(cowAnimKey);
+                // this.symbol.play(cowAnimKey);
             } else {
                 // Handle regular symbols
                 let textureKeys: string[] = [];
@@ -860,6 +841,4 @@ class Symbols {
             this.startMoving = false;
         });
     }
-    
-   
 }

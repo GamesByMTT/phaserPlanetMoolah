@@ -72,7 +72,7 @@ export class SocketManager {
               ResultData.gameData = data.message.GameData;
               ResultData.playerData = data.message.PlayerData;
               Globals.emitter?.Call("ResultData");
-              console.log(ResultData);
+              console.log(ResultData, "Win", ResultData.playerData.currentWining);
         }
       });
     });
