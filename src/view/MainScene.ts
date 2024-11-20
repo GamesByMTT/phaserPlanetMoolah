@@ -55,8 +55,8 @@ export default class MainScene extends Scene {
         // this.gameLogo = this.add.sprite(width * 0.5, height * 0.08, "gameLogo").setOrigin(0.5).setDepth(3)
         this.bottom = this.add.sprite(width * 0.5, height * 0.89, "bottomLayer").setOrigin(0.5).setScale(0.9);
         // this.rightPin = this.add.sprite(gameConfig.scale.width * 0.8, gameConfig.scale.height/1.9, "rightPin").setOrigin(0.5)
-        this.leftPin = this.add.sprite(gameConfig.scale.width * 0.2, gameConfig.scale.height/1.9, "leftPin").setOrigin(0.5) 
-        this.mainContainer.add([this.gameBg, this.leftPin, this.reelBg, this.bottom]);
+        // this.leftPin = this.add.sprite(gameConfig.scale.width * 0.2, gameConfig.scale.height/1.9, "leftPin").setOrigin(0.5) 
+        this.mainContainer.add([this.gameBg, this.reelBg, this.bottom]);
         this.soundManager.playSound("backgroundMusic");
 
         

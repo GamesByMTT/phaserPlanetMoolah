@@ -20,6 +20,7 @@ export class Slots extends Phaser.GameObjects.Container {
     private symbolHeight: number;
     private spacingX: number;
     private spacingY: number;
+    isCascading: boolean = false;
     private reelContainers: Phaser.GameObjects.Container[] = [];
     private connectionTimeout!: Phaser.Time.TimerEvent;
     private ufoSprites: Phaser.GameObjects.Sprite[] = []; // Array to store UFO sprites
@@ -232,57 +233,59 @@ export class Slots extends Phaser.GameObjects.Container {
     } 
 
     playWinAnimations() {
+        if (this.isCascading) return; // Add this check
         this.resultCallBack();
         ResultData.gameData.symbolsToEmit.forEach((rowArray: any) => {
             rowArray.forEach((row: any) => {
                 if (typeof row === "string") {
                     const [y, x]: number[] = row.split(",").map((value) => parseInt(value));
                     const elementId = ResultData.gameData.resultSymbols[x][y];
-
+    
                     if (this.slotSymbols[y] && this.slotSymbols[y][x]) {
                         this.winMusic("winMusic");
-                        // Play the regular symbol animation
                         this.slotSymbols[y][x].playAnimation(`symbol_anim_${elementId}`);
-
-                        // Add winning animation overlay
-                        this.playWinningOverlayAnimation(x, y, elementId); 
                     }
                 }
             });
         });
-
-        this.scene.time.delayedCall(1500, () => {
-            this.handleCascading();
-        });
+    
+        // Clear any existing delayed calls
+        this.scene.time.removeAllEvents();
         
+        // Set up single cascading trigger
+        this.scene.time.delayedCall(3000, () => {
+            if (!this.isCascading) {
+                this.handleCascading();
+            }
+        });
     }
 
     playWinningOverlayAnimation(x: number, y: number, elementId: number) {
-        // Calculate the position for the winning animation
-        const winAnimX = this.slotSymbols[y][x].symbol.x;
-        const winAnimY = this.slotSymbols[y][x].symbol.y;
-        // Create an array to hold the winning animation frames
-        const winningFrames = [];
-        for (let i = 0; i < 50; i++) { // Assuming you have 50 frames (winning0 to winning49)
-            winningFrames.push({ key: `winning${i}` });
-        }
+        // // Calculate the position for the winning animation
+        // const winAnimX = this.slotSymbols[y][x].symbol.x;
+        // const winAnimY = this.slotSymbols[y][x].symbol.y;
+        // // Create an array to hold the winning animation frames
+        // const winningFrames = [];
+        // for (let i = 0; i < 50; i++) { // Assuming you have 50 frames (winning0 to winning49)
+        //     // winningFrames.push({ key: `winning${i}` });
+        // }
 
-        this.scene.anims.create({
-            key: `winningAnim_${elementId}`,
-            frames: winningFrames,
-            frameRate: 10,
-            repeat: -1 
-        });
+        // // this.scene.anims.create({
+        // //     key: `winningAnim_${elementId}`,
+        // //     frames: winningFrames,
+        // //     frameRate: 10,
+        // //     repeat: -1 
+        // // });
 
-        const targetContainer = this.slotSymbols[y][x].symbol.parentContainer; 
-            // Create the winning sprite and add it to the container
-            const winningSprite = this.scene.add.sprite(winAnimX, winAnimY, `winning0`)
-                .setDepth(12)
-                .setScale(0.8, 0.8)
-                .setName(`winningSprite_${x}_${y}`);
-            targetContainer.add(winningSprite); // Add to the container
-            this.slotSymbols[y][x].winningSprite = winningSprite; 
-            winningSprite.play(`winningAnim_${elementId}`);
+        // const targetContainer = this.slotSymbols[y][x].symbol.parentContainer; 
+        //     // Create the winning sprite and add it to the container
+        //     const winningSprite = this.scene.add.sprite(winAnimX, winAnimY, `winning0`)
+        //         .setDepth(12)
+        //         .setScale(0.8, 0.8)
+        //         .setName(`winningSprite_${x}_${y}`);
+        //     targetContainer.add(winningSprite); // Add to the container
+        //     this.slotSymbols[y][x].winningSprite = winningSprite; 
+        //     winningSprite.play(`winningAnim_${elementId}`);
     }
 
     stopWinningAnimations() {
@@ -406,16 +409,90 @@ export class Slots extends Phaser.GameObjects.Container {
     }
 
     async handleCascading() {
-        if (ResultData.gameData.cascading && ResultData.gameData.cascading.length > 0) {
+        if (!ResultData.gameData.cascading || 
+            ResultData.gameData.cascading.length === 0 || 
+            this.isCascading) {
+            return;
+        }
+    
+        this.isCascading = true;
+        this.scene.time.removeAllEvents(); // Clear any pending events
+    
+        try {
             for (let cascadeIndex = 0; cascadeIndex < ResultData.gameData.cascading.length; cascadeIndex++) {
-                // Wait for 1500ms before starting next cascade
-                if (cascadeIndex > 0) {
+                // Stop all existing animations before starting new ones
+                this.stopAllAnimations();
+                
+                await this.processCascadeStep(cascadeIndex);
+    
+                if (cascadeIndex < ResultData.gameData.cascading.length - 1) {
                     await new Promise(resolve => this.scene.time.delayedCall(1500, resolve));
                 }
-                // Process current cascade step
-                await this.processCascadeStep(cascadeIndex);
+            }
+        } catch (error) {
+            console.error('Error in handleCascading:', error);
+        } finally {
+            this.isCascading = false;
+            this.scene.time.removeAllEvents();
+        }
+    }
+    
+    // Add this new method to stop all animations
+    private stopAllAnimations() {
+        this.stopWinningAnimations();
+        // this.scene.tweens.killAll();
+        
+        // Stop all symbol animations
+        for (let i = 0; i < this.reelContainers.length; i++) {
+            for (let j = 0; j < this.slotSymbols[i].length; j++) {
+                const symbol = this.slotSymbols[i][j];
+                if (symbol.symbol.anims.isPlaying) {
+                    symbol.symbol.anims.stop();
+                }
             }
         }
+    }
+    
+
+    private async processCascadeStep(cascadeIndex: number) {
+        return new Promise<void>(async (resolve) => {
+            const currentCascade = ResultData.gameData.cascading[cascadeIndex];
+            if (!currentCascade) {
+                resolve();
+                return;
+            }
+    
+            const symbolsToFill = currentCascade.symbolsToFill;
+            
+            try {
+                // Clear any existing animations before starting new ones
+                this.stopAllAnimations();
+                
+                if (currentCascade.winingSymbols && currentCascade.winingSymbols.length > 0) {
+                    await this.playBorderBlinkAnimation(currentCascade.winingSymbols);
+                }
+    
+                await this.playBlastAnimations(symbolsToFill);
+                await new Promise(resolve => this.scene.time.delayedCall(300, resolve));
+                await this.replaceSymbols(symbolsToFill);
+    
+                // Update the result symbols
+                symbolsToFill.forEach((column, columnIndex) => {
+                    if (Array.isArray(column)) {
+                        column.forEach((newSymbol, rowIndex) => {
+                            if (ResultData.gameData.resultSymbols[rowIndex]) {
+                                ResultData.gameData.resultSymbols[rowIndex][columnIndex] = newSymbol;
+                            }
+                        });
+                    }
+                });
+    
+                resolve();
+            } catch (error) {
+                console.error('Error in processCascadeStep:', error);
+                resolve();
+            }
+        });
     }
 
     private async playBlastAnimations(symbolsToFill: any[]): Promise<void> {
@@ -509,13 +586,24 @@ export class Slots extends Phaser.GameObjects.Container {
     private playPullAnimation(columnIndex: number, rowIndex: number): Promise<void> {
         return new Promise<void>((resolve) => {
             const symbol = this.slotSymbols[columnIndex][rowIndex];
-            const ufo = this.ufoSprites[columnIndex]; // Use UFO from same column
+            const ufo = this.ufoSprites[columnIndex];
     
-            // Create pull animation
-            if (!this.scene.anims.exists('pullAnimation')) {
+            // Store the new symbol value that should appear after the animation
+            const newSymbolId = ResultData.gameData.cascading[0].symbolsToFill[columnIndex][rowIndex];
+    
+            // Calculate the distance between UFO and symbol
+            const distance = Math.abs(ufo.y - symbol.symbol.y);
+            
+            // Create pull animation frames with dynamic height
+            if (!this.scene.anims.exists(`pullAnimation_${rowIndex}`)) {
+                const frameConfigs = Array.from({ length: 18 }, (_, i) => ({
+                    key: `pullAnim${i}`,
+                    scaleY: distance / this.scene.textures.getFrame('pullAnim0').height
+                }));
+    
                 this.scene.anims.create({
-                    key: 'pullAnimation',
-                    frames: Array.from({ length: 18 }, (_, i) => ({ key: `pullAnim${i}` })),
+                    key: `pullAnimation_${rowIndex}`,
+                    frames: frameConfigs,
                     frameRate: 20,
                     repeat: 0
                 });
@@ -523,24 +611,106 @@ export class Slots extends Phaser.GameObjects.Container {
     
             // Create pull sprite
             const pullSprite = this.scene.add.sprite(ufo.x, ufo.y + 20, 'pullAnim0')
+                .setOrigin(0.5, 0)
                 .setDepth(15);
     
+            // Set initial scale
+            const scaleY = distance / this.scene.textures.getFrame('pullAnim0').height;
+            pullSprite.setScale(1, scaleY);
+    
+            // Hide original symbol
             symbol.symbol.setAlpha(0);
-            pullSprite.play('pullAnimation');
+    
+            // Play pull animation
+            pullSprite.play(`pullAnimation_${rowIndex}`);
+    
+            // Create moving effect for the symbol towards UFO
+            this.scene.tweens.add({
+                targets: symbol.symbol,
+                x: ufo.x,
+                y: ufo.y,
+                scaleX: 0.3,
+                scaleY: 0.3,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    // After symbol is pulled up, prepare the new symbol
+                    const newSymbolTexture = newSymbolId === 12 
+                        ? this.getRandomCowTexture() 
+                        : `slots${newSymbolId}_0`;
+    
+                    // Reset symbol properties
+                    symbol.symbol
+                        .setTexture(newSymbolTexture)
+                        .setScale(0.75) // Reset to original scale
+                        .setPosition(symbol.startX, symbol.startY - this.spacingY * 2); // Position above
+    
+                    // Create dropping animation for new symbol
+                    this.scene.tweens.add({
+                        targets: symbol.symbol,
+                        y: symbol.startY,
+                        duration: 500,
+                        ease: 'Bounce.easeOut',
+                        onStart: () => {
+                            symbol.symbol.setAlpha(1); // Make visible again
+                        },
+                        onComplete: () => {
+                            // Set up appropriate animation for the new symbol
+                            if (newSymbolId === 12) {
+                                const cowAnimKey = `cowIdle_${columnIndex}_${rowIndex}`;
+                                if (!this.scene.anims.exists(cowAnimKey)) {
+                                    this.createCowAnimation(cowAnimKey, this.getRandomCowType());
+                                }
+                                symbol.symbol.play(cowAnimKey);
+                            } else {
+                                const symbolAnimKey = `symbol_anim_${newSymbolId}_${columnIndex}_${rowIndex}`;
+                                if (!this.scene.anims.exists(symbolAnimKey)) {
+                                    this.createSymbolAnimation(symbolAnimKey, newSymbolId);
+                                }
+                                symbol.symbol.play(symbolAnimKey);
+                            }
+                        }
+                    });
+                }
+            });
+    
             pullSprite.on('animationcomplete', () => {
                 pullSprite.destroy();
                 resolve();
             });
         });
     }
-    // Helper method to determine cow type
-    private getCowType(textureKey: string): string {
-        if (textureKey.includes('blackCow')) return 'blackCow';
-        if (textureKey.includes('brownCow')) return 'brownCow';
-        if (textureKey.includes('whiteCow')) return 'whiteCow';
-        return 'blackCow'; // default
+
+    private getRandomCowType(): string {
+        const cowTypes = ['blackCow', 'brownCow', 'whiteCow'];
+        return cowTypes[Phaser.Math.Between(0, cowTypes.length - 1)];
     }
     
+    private getRandomCowTexture(): string {
+        return `${this.getRandomCowType()}12_0`;
+    }
+    
+    private createCowAnimation(key: string, cowType: string) {
+        this.scene.anims.create({
+            key: key,
+            frames: Array.from({ length: 11 }, (_, i) => ({
+                key: `${cowType}12_${i}`
+            })),
+            frameRate: 10,
+            repeat: -1
+        });
+    }
+    
+    private createSymbolAnimation(key: string, symbolId: number) {
+        this.scene.anims.create({
+            key: key,
+            frames: Array.from({ length: 13 }, (_, i) => ({
+                key: `slots${symbolId}_${i}`
+            })),
+            frameRate: 20,
+            repeat: -1
+        });
+    }
     private replaceSymbols(symbolsToFill: any[]): Promise<void[]> {
         const promises: Promise<void>[] = [];
     
@@ -577,7 +747,7 @@ export class Slots extends Phaser.GameObjects.Container {
                                                 key: `${randomCowType}12_${i}`
                                             })),
                                             frameRate: 10,
-                                            repeat: -1
+                                            repeat: 1
                                         });
                                     }
                                     symbol.symbol.play(cowAnimKey);
@@ -608,40 +778,6 @@ export class Slots extends Phaser.GameObjects.Container {
         });
     
         return Promise.all(promises);
-    }
-
-
-    private async processCascadeStep(cascadeIndex: number) {
-        return new Promise<void>(async (resolve) => {
-            const currentCascade = ResultData.gameData.cascading[cascadeIndex];
-            if (!currentCascade) {
-                resolve();
-                return;
-            }
-            const symbolsToFill = currentCascade.symbolsToFill;
-    
-            // First, play blast/pull animations
-            await this.playBlastAnimations(symbolsToFill);
-            
-            // Add a small delay
-            await new Promise(resolve => this.scene.time.delayedCall(300, resolve));
-            
-            // Then replace symbols with dropping animation
-            await this.replaceSymbols(symbolsToFill);
-    
-            // Update the ResultData.gameData.resultSymbols after each cascade
-            symbolsToFill.forEach((column, columnIndex) => {
-                if (Array.isArray(column)) {
-                    column.forEach((newSymbol, rowIndex) => {
-                        if (ResultData.gameData.resultSymbols[rowIndex]) {
-                            ResultData.gameData.resultSymbols[rowIndex][columnIndex] = newSymbol;
-                        }
-                    });
-                }
-            });
-    
-            resolve();
-        });
     }
 
     private createUFOs() {
@@ -720,6 +856,78 @@ export class Slots extends Phaser.GameObjects.Container {
             } else {
                 ufo.stop();
             }
+        });
+    }
+
+    private createBorderAnimation(x: number, y: number): Phaser.GameObjects.Graphics {
+        const border = this.scene.add.graphics();
+        const symbol = this.slotSymbols[x][y].symbol;
+        const padding = 5; // Adjust padding as needed
+        const borderWidth = 10; // Adjust border width as needed
+        const cornerRadius = 10; // Radius for rounded corners
+    
+        border.lineStyle(borderWidth, 0x8B4513); // Brown color
+    
+        // Calculate rectangle dimensions
+        const rect = {
+            x: symbol.x - (symbol.displayWidth / 2) - padding,
+            y: symbol.y - (symbol.displayHeight / 2) - padding,
+            width: symbol.displayWidth + (padding * 2),
+            height: symbol.displayHeight + (padding * 2)
+        };
+    
+        // Draw rounded rectangle
+        border.beginPath();
+        border.moveTo(rect.x + cornerRadius, rect.y);
+        border.lineTo(rect.x + rect.width - cornerRadius, rect.y);
+        border.arc(rect.x + rect.width - cornerRadius, rect.y + cornerRadius, cornerRadius, -Math.PI/2, 0);
+        border.lineTo(rect.x + rect.width, rect.y + rect.height - cornerRadius);
+        border.arc(rect.x + rect.width - cornerRadius, rect.y + rect.height - cornerRadius, cornerRadius, 0, Math.PI/2);
+        border.lineTo(rect.x + cornerRadius, rect.y + rect.height);
+        border.arc(rect.x + cornerRadius, rect.y + rect.height - cornerRadius, cornerRadius, Math.PI/2, Math.PI);
+        border.lineTo(rect.x, rect.y + cornerRadius);
+        border.arc(rect.x + cornerRadius, rect.y + cornerRadius, cornerRadius, Math.PI, -Math.PI/2);
+        border.closePath();
+        border.strokePath();
+        
+        return border;
+    }
+
+    private async playBorderBlinkAnimation(winningSymbolsArray: string[][]): Promise<void> {
+        return new Promise<void>((resolve) => {
+            const borders: Phaser.GameObjects.Graphics[] = [];
+            
+            // Flatten the array of arrays and create borders for all winning symbols
+            winningSymbolsArray.forEach(winningSymbols => {
+                winningSymbols.forEach(symbolPos => {
+                    const [y, x] = symbolPos.split(',').map(Number); // Swapped x and y here
+                    const border = this.createBorderAnimation(y, x);
+                    borders.push(border);
+                });
+            });
+    
+            let blinkCount = 0;
+            const totalBlinks = 3;
+            const blinkDuration = 300; // Duration for each blink (on/off)
+    
+            const blink = () => {
+                borders.forEach(border => {
+                    border.setVisible(!border.visible);
+                });
+    
+                blinkCount++;
+                if (blinkCount < totalBlinks * 2) { // * 2 because each blink needs on and off
+                    this.scene.time.delayedCall(blinkDuration, blink);
+                } else {
+                    // Clean up borders after blinking
+                    borders.forEach(border => border.destroy());
+                    // Wait 1 second after blinking before resolving
+                    this.scene.time.delayedCall(1000, resolve);
+                }
+            };
+    
+            // Start blinking
+            blink();
         });
     }
 }
@@ -806,7 +1014,7 @@ class Symbols {
                             key: `${randomCowType}12_${i}`
                         })),
                         frameRate: 10,
-                        repeat: -1
+                        repeat: 1
                     });
                 }
                 // this.symbol.play(cowAnimKey);

@@ -35,8 +35,10 @@ export const Globals: globalDataType = {
   masterVolume: 1,
 };
 
+
+
 // Define the structure of a symbol object
-interface SymbolType {
+export interface SymbolType {
   ID: number;
   Name: string;
   multiplier: number[]; // Assuming multiplier is an array of numbers
@@ -141,42 +143,34 @@ export const currentGameData = {
 };
 
 export const ResultData: {
-  gameData: GameDataResult;
-  playerData: PlayerData;
+    gameData: GameDataResult;
+    playerData: PlayerData;
 } = {
-  gameData: {
-      cascading: [],
-      BonusResult: [],
-      freeSpinCount: 0,
-      isCascading: false,
-      isFreeSpin: false,
-      BonusStopIndex: -1,
-      resultSymbols: [],
-      ResultReel: [],
-      WinAmout: 0,
-      freeSpins: {
-          count: 0,
-          isNewAdded: false,
-      },
-      isBonus: false,
-      jackpot: 0,
-      linesToEmit: [],
-      symbolsToEmit: [],
-  },
-  playerData: {
-      Balance: 0,
-      haveWon: 0,
-      currentWining: 0,
-      currentBet: 0,
-  }
-};
-
-export const gambleResult = {
-  gamleResultData: {
-    Balance: 0,
-    currentWining: 0,
-    playerWon: false,
-  },
+    gameData: {
+        cascading: [],
+        BonusResult: [],
+        freeSpinCount: 0,
+        isCascading: false,
+        isFreeSpin: false,
+        BonusStopIndex: -1,
+        resultSymbols: [],
+        ResultReel: [],
+        WinAmout: 0,
+        freeSpins: {
+            count: 0,
+            isNewAdded: false,
+        },
+        isBonus: false,
+        jackpot: 0,
+        linesToEmit: [],
+        symbolsToEmit: [],
+    },
+    playerData: {
+        Balance: 0,
+        haveWon: 0,
+        currentWining: 0,
+        currentBet: 0,
+    }
 };
 
 export const TextStyle = {

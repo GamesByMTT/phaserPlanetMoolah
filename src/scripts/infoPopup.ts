@@ -25,7 +25,7 @@ export default class InfoScene extends Scene{
             pointer.event.stopPropagation();
         })
         this.pageviewContainer = this.add.container();
-        this.popupBackground = new Phaser.GameObjects.Sprite(this, gameConfig.scale.width/2, gameConfig.scale.height/2, "messagePopup");
+        this.popupBackground = new Phaser.GameObjects.Sprite(this, gameConfig.scale.width/2, gameConfig.scale.height/2, "messagePopup").setDisplaySize(1600, 800);
         const inputOverlay = this.add.rectangle(0, 0, this.cameras.main.width, this.cameras.main.height, 0x000000, 0.7)
             .setOrigin(0, 0)
             .setDepth(16)
@@ -35,9 +35,9 @@ export default class InfoScene extends Scene{
             pointer.event.stopPropagation();
         });
         this.pageviewContainer.add([inputOverlay, this.popupBackground])
-        this.leftArrow = new Phaser.GameObjects.Sprite(this, 300, gameConfig.scale.height/2, "leftArrow").setInteractive().setScale(0.5);
-        this.rightArrow = new Phaser.GameObjects.Sprite(this, 1600, gameConfig.scale.height/2, "rightArrow").setInteractive().setScale(0.5);
-        this.infoCross = new Phaser.GameObjects.Sprite(this, gameConfig.scale.width * 0.77, gameConfig.scale.height/2-300, "infoCross").setInteractive().setScale(0.7)
+        this.leftArrow = new Phaser.GameObjects.Sprite(this, gameConfig.scale.width/2 - 100, gameConfig.scale.height * 0.91, "leftArrow").setInteractive().setScale(1.3);
+        this.rightArrow = new Phaser.GameObjects.Sprite(this, gameConfig.scale.width/2 + 100, gameConfig.scale.height * 0.91, "rightArrow").setInteractive().setScale(1.3);
+        this.infoCross = new Phaser.GameObjects.Sprite(this, gameConfig.scale.width/2, gameConfig.scale.height * 0.91, "stopClose").setInteractive().setScale(1.3)
         this.infoCross.on('pointerdown', ()=>{
             if(Globals.SceneHandler?.getScene("InfoScene")){
                 Globals.SceneHandler.removeScene("InfoScene")
@@ -57,101 +57,143 @@ export default class InfoScene extends Scene{
     createPages() {
         // Create pages and add content
         this.pages[1] = this.add.container(0, 0);
-        const payTableHeading = this.add.text(this.scale.width/2, 200, "Paytable", {fontFamily:"Anton", color: "#ffffff", fontSize: "70px"}).setOrigin(0.5)
-        const payTableImage = this.add.sprite(gameConfig.scale.width/2, gameConfig.scale.height/2, "payLines").setScale(1.2)
-       
-        this.pages[1].add([payTableHeading, payTableImage]);
-        this.pageviewContainer.add(this.pages[1]);
+        
+        const cowbg = this.add.sprite(700, 400, "cowbg").setScale(0.6).setOrigin(0.5)
 
-        this.pages[2] = this.add.container(0, 0);  // Position off-screen initially
-        const symbolPayoutone = this.add.text(this.scale.width/2, 200, "Symbol Payout", {fontFamily:"Anton", color: "#ffffff", fontSize: "70px"}).setOrigin(0.5)
-
-        const symbol1 = this.add.sprite(500, 400, "inofIcon1").setScale(0.8)
-        const symbol2 = this.add.sprite(900, 400, "inofIcon2").setScale(0.8)
-        const symbol3 = this.add.sprite(1250, 400, "inofIcon3").setScale(0.8)
-        const symbol4 = this.add.sprite(500, 600, "inofIcon4").setScale(0.8)
-        const symbol5 = this.add.sprite(900, 600, "inofIcon5").setScale(0.8)
-        const symbol6 = this.add.sprite(1250, 600, "inofIcon6").setScale(0.8)
-        const symbol7 = this.add.sprite(900, 780, "inofIcon7").setScale(0.8)
+        const wildCow = this.add.sprite(550, 400, "threeCow").setOrigin(0.5).setScale(0.7)
+        const wildText = this.add.text(1000, 400, initData.UIData.symbols[12].description, {fontFamily:"RobotoCondensed", fontSize:"30px", color: "#ffffff", wordWrap:{ width: 300, useAdvancedWrap: true }}).setOrigin(0.5)
+        const jackpotBg = this.add.sprite(1440, 400, "jackpotBg").setDisplaySize(520, 220).setOrigin(0.5)
+        const jackpotIcon = this.add.sprite(1280, 400, "slots13_0").setOrigin(0.5).setScale(0.7)
+        const jackpotText = this.add.text(1530, 400, initData.UIData.symbols[13].description, {fontFamily:"RobotoCondensed", fontSize:"30px", color: "#ffffff", wordWrap:{ width: 300, useAdvancedWrap: true }}).setOrigin(0.5)
+        // const symbol1 = this.add.sprite(500, 400, "slots0_0").setScale(0.8)
+        // const symbol2 = this.add.sprite(900, 400, "slots1_0").setScale(0.8)
+        // const symbol3 = this.add.sprite(1250, 400, "slots2_0").setScale(0.8)
+        const symbol11 = this.add.sprite(450, 600, "slots11_0").setScale(0.8)
+        const symbol10 = this.add.sprite(800, 600, "slots10_0").setScale(0.8)
+        const symbol9 = this.add.sprite(1150, 600, "slots9_0").setScale(0.8)
+        const symbol8 = this.add.sprite(1500, 600, "slots8_0").setScale(0.8)
         const infoIcons = [
-            { x: 590, y: 400 }, // Position for infoIcon2
-            { x: 990, y: 400 }, // Position for infoIcon3
-            { x: 1340, y: 400 }, //
-            { x: 590, y: 600 }, //
-            { x: 990, y: 600 }, //
-            { x: 1340, y: 600 }, //
-            { x: 990, y: 800 }, //
+            { x: 390, y: 800 }, //
+            { x: 740, y: 800 }, //
+            { x: 1100, y: 800 }, //
+            { x: 1430, y: 800 }, //
         ]
 
-         initData.UIData.symbols.forEach((symbol, symbolIndex) => {
-            // Get the corresponding infoIcon position
-            const iconPosition = infoIcons[symbolIndex];
+        const symbolIndices = [11, 10, 9, 8];
 
-            if (!iconPosition) return; // Avoid undefined positions
-
-            // Loop through each multiplier in the current symbol
+        symbolIndices.forEach((targetSymbolIndex, displayIndex) => {
+            const symbol = initData.UIData.symbols[targetSymbolIndex];
+            if (!symbol) return;    
+            const iconPosition = infoIcons[displayIndex]; // Use displayIndex for icon position
             
+            if (!iconPosition) return;
+        
+            // Add background image first
+            const inconBgImage = this.add.sprite(iconPosition.x + 60, iconPosition.y - 50, "iconBg").setScale(0.7);
+            this.pages[1].add(inconBgImage);
+        
+            // Then add all text elements
             symbol.multiplier.forEach((multiplierValueArray, multiplierIndex, array) => {
                 if (Array.isArray(multiplierValueArray)) {
                     const multiplierValue = multiplierValueArray[0];
-                    if (multiplierValue > 0) {  // Skip the loop iteration if multiplierValue is 0
-                        // Determine the text (e.g., '5x', '4x', '2x')
-                        // const prefix = [5, 4, 3][multiplierIndex]; // Customize this if needed
-                        const prefix = (5 - multiplierIndex) + "x"; // No need for an array lookup
-                        // console.log(multiplierValue, "multiplierValue");
+                    if (multiplierValue > 0) {
+                        const prefix = (5 - multiplierIndex) + "x";
                         let text = `${prefix} - ${multiplierValue} \n`;            
-                        // Create the text object
+                        
                         const textObject = this.add.text(
-                            iconPosition.x, // X position (you might want to offset this)
-                            iconPosition.y + multiplierIndex * 60, // Y position (spacing between lines)
+                            iconPosition.x,
+                            iconPosition.y + multiplierIndex * 60,
                             text,
-                            { fontFamily: "Anton", fontSize: '40px', color: '#fff' } // Customize text style
+                            { fontFamily: "Anton", fontSize: '35px', color: '#fff' }
                         );
-                        // Optionally adjust the position further based on requirements
-                        textObject.setLineSpacing(100)
-                        textObject.setOrigin(0, 0.5); // Center the text if needed
-                        this.pages[2].add(textObject);
+                        
+                        textObject.setLineSpacing(100);
+                        textObject.setOrigin(0, 0.5);
+                        this.pages[1].add(textObject);
+                    }
+                }
+            });
+        });
+        
+
+        this.pages[1].add([cowbg, wildCow, wildText, jackpotBg, jackpotIcon, jackpotText, symbol11, symbol10, symbol9, symbol8])
+        this.pageviewContainer.add(this.pages[1]);
+
+        this.pages[2] = this.add.container(0, 0);  // Position off-screen initially
+        // const payTableHeading = this.add.text(this.scale.width/2, 200, "Paytable", {fontFamily:"Anton", color: "#ffffff", fontSize: "70px"}).setOrigin(0.5)
+        const symbol7 = this.add.sprite(450, 260, "slots7_0").setScale(0.8)
+        const symbol6 = this.add.sprite(800, 260, "slots6_0").setScale(0.8)
+        const symbol5 = this.add.sprite(1150, 260, "slots5_0").setScale(0.8)
+        const symbol4 = this.add.sprite(1500, 260, "slots4_0").setScale(0.8)
+        const symbol3 = this.add.sprite(450, 600, "slots3_0").setScale(0.8)
+        const symbol2 = this.add.sprite(800, 600, "slots2_0").setScale(0.8)
+        const symbol1 = this.add.sprite(1150, 600, "slots1_0").setScale(0.8)
+        const symbol0 = this.add.sprite(1500, 600, "slots0_0").setScale(0.8)
+        const inewnfoIcons = [
+            { x: 390, y: 430 }, //
+            { x: 740, y: 430 }, //
+            { x: 1100, y: 430 }, //
+            { x: 1430, y: 430 }, //
+            { x: 390, y: 800 }, //
+            { x: 740, y: 800 }, //
+            { x: 1100, y: 800 }, //
+            { x: 1430, y: 800 }, //
+        ]
+
+
+        const secondsymbolIndices = [7, 6, 5, 4, 3, 2, 1, 0];
+
+        secondsymbolIndices.forEach((targetSymbolIndex, twicedisplayIndex) => {
+            const secondSymbol = initData.UIData.symbols[targetSymbolIndex];
+            if (!secondSymbol) return;    
+            const iconPosition = inewnfoIcons[twicedisplayIndex]; // Use displayIndex for icon position
+            
+            if (!iconPosition) return;
+        
+            // Add background image first
+            const inconBgImage = this.add.sprite(iconPosition.x + 60, iconPosition.y - 50, "iconBg").setScale(0.7);
+            this.pages[2].add(inconBgImage);
+        
+            // Then add all text elements
+            secondSymbol.multiplier.forEach((newmultiplierValueArray, multiplierIndex, array) => {
+                if (Array.isArray(newmultiplierValueArray)) {
+                    const mymultiplierValue = newmultiplierValueArray[0];
+                    if (mymultiplierValue > 0) {
+                        const newprefix = (5 - multiplierIndex) + "x";
+                        let newtext = `${newprefix} - ${mymultiplierValue} \n`;            
+                        
+                        const secondTextObject = this.add.text(
+                            iconPosition.x,
+                            iconPosition.y + multiplierIndex * 60,
+                            newtext,
+                            { fontFamily: "Anton", fontSize: '35px', color: '#fff' }
+                        );
+                        secondTextObject.setLineSpacing(100);
+                        secondTextObject.setOrigin(0, 0.5);
+                        this.pages[2].add(secondTextObject);
                     }
                 }
             });
         });
 
-        // const BonusSceneHeading = this.add.text(this.scale.width/2.3, 300, "BONUS GAME", {fontFamily:"Anton", color: "#ffffff", fontSize: "80px"})
-
-        // const bonusGameImg = this.add.sprite(this.scale.width/2.9, 550, "BonusScenegame").setScale(0.25)
-
-        // const BonusSceneDescription = this.add.text(this.scale.width/1.95, 430, "Triggers bonus game if 5 icons appear anywhere on the result matrix.", {fontFamily:"Anton", align:"center", color: "#ffffff", fontSize: "60px", wordWrap:{ width: 600, useAdvancedWrap: true }})
-        
-        this.pages[2].add([symbolPayoutone, symbol1, symbol2, symbol3, symbol4, symbol5, symbol6, symbol7])
+        this.pages[2].add([symbol7, symbol6, symbol5, symbol4, symbol3, symbol2, symbol1, symbol0]);
         this.pageviewContainer.add(this.pages[2]);
+       
 
         this.pages[3] = this.add.container(0, 0);  // Position off-screen initially
-        const symbolPayout = this.add.text(this.scale.width/2, 200, "Symbol Payout", {fontFamily:"Anton", color: "#ffffff", fontSize: "70px"}).setOrigin(0.5)
-        const symbol8 = this.add.sprite(500, 400, "inofIcon8").setScale(0.8)
-        const symbol8Text = this.add.text(600, 300, "Scatter: Offers higher pay outs when 3 or more symbols appear anywhere on the result matrix. Payout: 5x - 600, 4x - 300, 3x-100", {fontFamily:"Anton", fontSize:"25px", color: "#ffffff", wordWrap:{ width: 300, useAdvancedWrap: true }})
-        const symbol9 = this.add.sprite(1050, 400, "inofIcon9").setScale(0.8)
-        const symbol9Text = this.add.text(1150, 300, "Starts a Bonus game for a pay out when 3 or more symbols appear anywhere on the result matrix.", {fontFamily:"Anton", fontSize:"25px", color: "#ffffff", wordWrap:{ width: 300, useAdvancedWrap: true }})
-        const symbol10 = this.add.sprite(500, 700, "inofIcon10").setScale(0.8);
-        const symbol10Text = this.add.text(600, 640, "Substitutes for all symbols except Jackpot, Bonus and Scatter.", {fontFamily:"Anton", fontSize:"25px", color: "#ffffff", wordWrap:{ width: 300, useAdvancedWrap: true }})
-        const symbol11 = this.add.sprite(1050, 700, "inofIcon11").setScale(0.8)
-        const symbol11Text = this.add.text(1150, 640, "Mega win triggered by 5 Jackpot symbols anywhere on the result matrix. Payout: 5000x", {fontFamily:"Anton", fontSize:"25px", color: "#ffffff", wordWrap:{ width: 300, useAdvancedWrap: true }})
-        // const riskGameHeading = this.add.text(this.scale.width/2.3, 270, "Risk Game", {fontFamily:"Anton", color: "#ffffff", fontSize: "80px"})
+        
+        const payTableImage = this.add.sprite(gameConfig.scale.width/2, gameConfig.scale.height/2, "payLines").setScale(1.2)
 
-        // const riskGameImg = this.add.sprite(this.scale.width/2.9, 550, "riskGameimage").setScale(0.25)
-
-        // const riskGameDescription = this.add.text(this.scale.width/1.95, 385, `The player can click the "Double" Button After a win to activate the risk game.  the player faces off against the dealer with the total four cards. the player selects one of three face-down cards first, then the dealer reveals their card, if the player chosen card is higher in value than the delear's card, the players winnings are doubled. If not then player receives nothing.`, {fontFamily:"Anton", align:"center", color: "#ffffff", fontSize: "40px", wordWrap:{ width: 550, useAdvancedWrap: true }})
-        this.pages[3].add([symbolPayout, symbol8, symbol8Text, symbol9, symbol9Text, symbol10, symbol10Text, symbol11, symbol11Text])
+        this.pages[3].add([ payTableImage])
         this.pageviewContainer.add(this.pages[3]);
 
         this.pages[4] = this.add.container(0, 0);
 
-        const BonusSceneHeading = this.add.text(this.scale.width/2, 200, "BONUS GAME", {fontFamily:"Anton", color: "#ffffff", fontSize: "70px"}).setOrigin(0.5)
+        const freeSpinHeading = this.add.text(this.scale.width/2, 300, "Free Spin", {fontFamily:"RobotoCondensed", color: "#000000", fontSize: "80px"}).setOrigin(0.5)
 
-        const bonusGameImg = this.add.sprite(this.scale.width/2, 480, "BonusScenegame").setScale(0.4)
-
-        const BonusSceneDescription = this.add.text(this.scale.width/2, 780, "In this game you will see five similar chest. Select them one by one to reveal your prize untill game is over", {fontFamily:"Anton", align:"center", color: "#ffffff", fontSize: "40px", wordWrap:{ width: 1000, useAdvancedWrap: true }}).setOrigin(0.5)
-
-        this.pages[4].add([BonusSceneHeading, bonusGameImg, BonusSceneDescription])
+        const freeSpinDescription = this.add.text(this.scale.width/2, 450, "During Free Spins, the bet per line and the active payline remain the same as the spin that triggered the feature", {fontFamily:"RobotoCondensed", color: "#000000", fontSize: "50px", wordWrap:{ width: 1100, useAdvancedWrap: true }}).setOrigin(0.5)
+        const freeSpinDescription2 = this.add.text(this.scale.width/2, 700, `4 or more consecutive cascades trigger the free spins \n 4 consecutive cascades awards 3 free plays \n 5 consecutive cascades awards 5 free plays \n 6 consecutive cascades awards 7 free plays \n 7 consecutive cascades awards 10 free plays \n 8 consecutive cascades awards 25 free plays`, {fontFamily:"RobotoCondensed", color: "#000000", fontSize: "40px", wordWrap:{ width: 1000, useAdvancedWrap: true }}).setOrigin(0.5)
+        this.pages[4].add([freeSpinHeading, freeSpinDescription, freeSpinDescription2])
         this.pages = [this.pages[1], this.pages[2], this.pages[3], this.pages[4]];
         this.currentPageIndex = 0;
         
