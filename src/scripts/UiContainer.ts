@@ -145,6 +145,7 @@ export class UiContainer extends Phaser.GameObjects.Container {
                 return
             }
                 this.buttonMusic("spinButton");
+                this.onSpin(true);
                 if(this.doubleButton){
                     this.doubleButton.destroy();   
                 }
@@ -164,7 +165,6 @@ export class UiContainer extends Phaser.GameObjects.Container {
                     currentGameData.currentBalance -= (initData.gameData.Bets[currentGameData.currentBetIndex] * this.totalLines);
                     this.currentBalanceText.updateLabelText(currentGameData.currentBalance.toFixed(2));
                     // Trigger the spin callback
-                    this.onSpin(true);
                     spinCallBack();
                 }
             });
@@ -311,22 +311,21 @@ export class UiContainer extends Phaser.GameObjects.Container {
 
     onSpin(spin: boolean) {
         // Handle spin functionality
+        console.error("cececfeve", spin)
         if(this.isAutoSpinning){
             return
         }
         if(spin){
+            this.spinBtn.setTexture("spinBtnOnPressed");
             this.spinBtn.disableInteractive();
-            // this.spinBtn.setTexture("spinBtnOnPressed");
-            this.spinBtn.setTexture("spinBtn");
-            this.autoBetBtn.setTexture("autoSpin")
-            // this.autoBetBtn.setTexture("autoSpinOnPressed")
+            this.autoBetBtn.setTexture("autoSpinOnPressed")
             this.autoBetBtn.disableInteractive();
             // this.maxbetBtn.disableInteractive();
             // this.maxbetBtn.setTexture("maxBetBtOnPressed");
             this.pBtn.disableInteractive();
             this.pBtn.setTexture("pBtnH")
-            this.spinBtn.setAlpha(0.5)
-            this.autoBetBtn.setAlpha(0.5)
+            // this.spinBtn.setAlpha(0.5)
+            // this.autoBetBtn.setAlpha(0.5)
             
         }else{
             this.spinBtn.setTexture("spinBtn");
@@ -337,8 +336,8 @@ export class UiContainer extends Phaser.GameObjects.Container {
             // this.maxbetBtn.setTexture("maxBetBtn");
             this.pBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
             this.pBtn.setTexture("pBtn");
-            this.spinBtn.setAlpha(1)
-            this.autoBetBtn.setAlpha(1)
+            // this.spinBtn.setAlpha(1)
+            // this.autoBetBtn.setAlpha(1)
         }        
     }
 

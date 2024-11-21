@@ -35,6 +35,7 @@ export default class MainScene extends Scene {
     rightPin!: Phaser.GameObjects.Sprite;
     leftPin!: Phaser.GameObjects.Sprite
     private mainContainer!: Phaser.GameObjects.Container;
+    private freeSpinInterval: NodeJS.Timeout | null = null;
 
     constructor() {
         super({ key: 'MainScene' });
@@ -79,7 +80,7 @@ export default class MainScene extends Scene {
     }
 
     private onResultCallBack() {
-        this.uiContainer.onSpin(false);
+        // this.uiContainer.onSpin(false);
         this.soundManager.stopSound("onSpin"); 
         // this.lineGenerator.showLines(ResultData.gameData.cascading.lineToEmit);
     }
@@ -106,14 +107,19 @@ export default class MainScene extends Scene {
 
     // Handle ResultData logic separately
     private handleResultData() {
-        if (ResultData.gameData.isBonus) {
-            if (this.uiContainer.isAutoSpinning) {
-                // Emit events directly instead of simulating clicks
-                this.uiContainer.autoBetBtn.emit('pointerdown');
-                this.uiContainer.autoBetBtn.emit('pointerup'); 
+        if(ResultData.gameData.isFreeSpin){
+            this.reelBg.setTexture("freeSpinReel");
+            this.gameBg.setTexture("freeSpinBg");
+            this.hideButtons()
+            if (!this.freeSpinInterval && ResultData.gameData.freeSpinCount > 0) {
+                this.startFreeSpins();
+                this.uiContainer.onSpin(true);
             }
-            this.soundManager.pauseSound("backgroundMusic");
-            Globals.SceneHandler?.addScene('BonusScene', BonusScene, true);
+            // this.uiContainer.spinBtn
+        }else{
+            this.showButtons();
+            this.reelBg.setTexture("reelBg");
+            this.gameBg.setTexture("gameBg");
         }
 
         this.uiContainer.currentWiningText.updateLabelText(ResultData.playerData.currentWining.toFixed(2).toString());
@@ -136,6 +142,39 @@ export default class MainScene extends Scene {
               //jackpot Condition
               this.showWinPopup(winAmount, 'jackpotText')
            }
+    }
+
+    private startFreeSpins() {
+        // Clear any existing interval
+        if (this.freeSpinInterval) {
+            clearInterval(this.freeSpinInterval);
+        }
+        // Set interval for free spins
+        this.freeSpinInterval = setInterval(() => {
+            if (ResultData.gameData.freeSpinCount > 0) {
+                Globals.Socket?.sendMessage("SPIN", { currentBet: currentGameData.currentBetIndex, currentLines: initData.gameData.linesApiData.length, spins: 1 });
+                this.onSpinCallBack();
+                ResultData.gameData.freeSpinCount--;
+                setTimeout(() => {
+                    this.slot.stopTween();
+                }, 1000);
+            } else {
+                // End free spins
+                this.endFreeSpins();
+            }
+        }, 6000); // Adjust timing as needed (6 seconds between spins)
+    }
+    
+    private endFreeSpins() {
+        // Clear the interval
+        if (this.freeSpinInterval) {
+            clearInterval(this.freeSpinInterval);
+            this.freeSpinInterval = null;
+        }
+        // Reset free spin state
+        ResultData.gameData.isFreeSpin = false;
+        this.reelBg.setTexture("reelBg");
+        this.gameBg.setTexture("gameBg");
     }
 
     // Function to show win popup
@@ -187,6 +226,23 @@ export default class MainScene extends Scene {
                 });
             }
         });
+    }
+
+    private hideButtons(){
+        this.uiContainer.spinBtn.setVisible(false);
+        this.uiContainer.spinBtn.disableInteractive();
+        this.uiContainer.autoBetBtn.setVisible(false);
+        this.uiContainer.autoBetBtn.disableInteractive();
+        this.uiContainer.pBtn.disableInteractive();
+        this.uiContainer.mBtn.disableInteractive();
+    }
+    private showButtons(){
+        this.uiContainer.spinBtn.setVisible(true)
+        this.uiContainer.spinBtn.setInteractive();
+        this.uiContainer.autoBetBtn.setVisible(true);
+        this.uiContainer.autoBetBtn.setInteractive()
+        this.uiContainer.pBtn.setInteractive()
+        this.uiContainer.mBtn.setInteractive()
     }
 
     private setupFocusBlurEvents() {

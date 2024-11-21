@@ -129,6 +129,8 @@ export const LoaderConfig = {
     sounProgress: "src/sprites/soundProgreesBar.png",
     laser: "src/sprites/laserImage.png",
     iconBg: "src/sprites/iconBg.png",
+    freeSpinReel: "src/sprites/freeSpinReel.png",
+    freeSpinBg: "src/sprites/freeSpinBg.jpg",
 
 
     ufo0: "src/sprites/UFO-0.png",

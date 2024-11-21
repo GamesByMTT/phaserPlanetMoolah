@@ -11,8 +11,8 @@ export class LineGenerator extends Phaser.GameObjects.Container {
 
     constructor(scene: Phaser.Scene, yOf: number, xOf: number) {
         super(scene);
-        xOffset = xOf ;
-        yOffset = yOf * 1.15;
+        xOffset = xOf - 20;
+        yOffset = yOf * 1.02;
 
         // Create lines based on initData
         for (let i = 0; i < initData.gameData.linesApiData.length; i++) {
