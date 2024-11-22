@@ -160,6 +160,7 @@ export class UiContainer extends Phaser.GameObjects.Container {
                 targets: this.spinBtn,
                 duration: 100,
                 onComplete: () => {
+                    this.insideText.setText("GOOD LUCK")
                     // Send message and update the balance
                     Globals.Socket?.sendMessage("SPIN", { currentBet: currentGameData.currentBetIndex, currentLines: initData.gameData.linesApiData.length, spins: 1 });
                     currentGameData.currentBalance -= (initData.gameData.Bets[currentGameData.currentBetIndex] * this.totalLines);

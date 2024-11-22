@@ -30,9 +30,9 @@ export default class LineSymbols extends Phaser.GameObjects.Container{
         let yPosition = (index / 2) * 97.5 - 300; // Adjusted Y position for both sides
 
         // For left side sprites
-        leftSprite = scene.add.text(-gameConfig.scale.width / 3.18, yPosition + 100, `${index}`, {fontSize:"30px"}).setScale(0.8).setOrigin(0.5);
-        leftSprite.setInteractive({ useHandCursor: true }).setDepth(5);
-        numberContainer.add(leftSprite);
+        // leftSprite = scene.add.text(-gameConfig.scale.width / 3.18, yPosition + 100, `${index}`, {fontSize:"30px"}).setScale(0.8).setOrigin(0.5);
+        // leftSprite.setInteractive({ useHandCursor: true }).setDepth(5);
+        // numberContainer.add(leftSprite);
 
         // // For right side sprites
         // rightSprite = scene.add.sprite(gameConfig.scale.width / 3.19, yPosition + 100, `number${index}`).setScale(0.8).setOrigin(0.5);
@@ -40,13 +40,13 @@ export default class LineSymbols extends Phaser.GameObjects.Container{
         // numberContainer.add(rightSprite);
 
         // Add hover event listeners for the left sprite
-        leftSprite.on("pointerover", () => {
-            this.showLines(index);
-        });
+        // leftSprite.on("pointerover", () => {
+        //     this.showLines(index);
+        // });
             
-        leftSprite.on("pointerout", () => {
-            this.hideLines();
-        });
+        // leftSprite.on("pointerout", () => {
+        //     this.hideLines();
+        // });
 
         // // Add hover event listeners for the right sprite
         // rightSprite.on("pointerover", () => {

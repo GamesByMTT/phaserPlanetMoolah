@@ -11,7 +11,6 @@ import {
     initData, 
 } from '../scripts/Globals';
 import { gameConfig } from '../scripts/appconfig';
-import BonusScene from './BonusScene';
 import SoundManager from '../scripts/SoundManager';
 
 export default class MainScene extends Scene {
@@ -107,7 +106,7 @@ export default class MainScene extends Scene {
 
     // Handle ResultData logic separately
     private handleResultData() {
-        if(ResultData.gameData.isFreeSpin){
+        if(ResultData.gameData.freeSpinCount>0){
             this.reelBg.setTexture("freeSpinReel");
             this.gameBg.setTexture("freeSpinBg");
             this.hideButtons()
@@ -121,111 +120,88 @@ export default class MainScene extends Scene {
             this.reelBg.setTexture("reelBg");
             this.gameBg.setTexture("gameBg");
         }
+        if(ResultData.playerData.currentWining > 0){
+            this.uiContainer.insideText.setText(`YOU WIN ${ResultData.playerData.currentWining.toFixed(2)}`);
+        }else{
+            this.uiContainer.insideText.setText(`BETTER LUCK NEXT TIME!`)
+        }
 
         this.uiContainer.currentWiningText.updateLabelText(ResultData.playerData.currentWining.toFixed(2).toString());
         currentGameData.currentBalance = ResultData.playerData.Balance;
-        let betValue = (initData.gameData.Bets[currentGameData.currentBetIndex]) * 20;
-        let winAmount = ResultData.gameData.WinAmout;
-        let jackpot = ResultData.gameData.jackpot
-        // this.uiContainer.currentBalanceText.updateLabelText(parseFloat(currentGameData.currentBalance).toFixed(2).toString());
+        // let betValue = (initData.gameData.Bets[currentGameData.currentBetIndex]) * 20;
+        // let winAmount = ResultData.gameData.WinAmout;
+        // let jackpot = ResultData.gameData.jackpot
+        // // this.uiContainer.currentBalanceText.updateLabelText(parseFloat(currentGameData.currentBalance).toFixed(2).toString());
         
-        if (winAmount >= 10 * betValue && winAmount < 15 * betValue) {
-            // Big Win Popup
-            this.showWinPopup(winAmount, 'bigWinText')
-           } else if (winAmount >= 15 * betValue && winAmount < 20 * betValue) {
-               // HugeWinPopup
-               this.showWinPopup(winAmount, 'hugeWinText')
-           } else if (winAmount >= 20 * betValue && winAmount < 25 * betValue) {
-               //MegawinPopup
-               this.showWinPopup(winAmount, 'megaWinText')
-           } else if(jackpot > 0) {
-              //jackpot Condition
-              this.showWinPopup(winAmount, 'jackpotText')
-           }
+        // if (winAmount >= 10 * betValue && winAmount < 15 * betValue) {
+        //     // Big Win Popup
+        //     this.showWinPopup(winAmount, 'bigWinText')
+        //    } else if (winAmount >= 15 * betValue && winAmount < 20 * betValue) {
+        //        // HugeWinPopup
+        //        this.showWinPopup(winAmount, 'hugeWinText')
+        //    } else if (winAmount >= 20 * betValue && winAmount < 25 * betValue) {
+        //        //MegawinPopup
+        //        this.showWinPopup(winAmount, 'megaWinText')
+        //    } else if(jackpot > 0) {
+        //       //jackpot Condition
+        //       this.showWinPopup(winAmount, 'jackpotText')
+        //    }
     }
 
     private startFreeSpins() {
-        // Clear any existing interval
         if (this.freeSpinInterval) {
             clearInterval(this.freeSpinInterval);
         }
-        // Set interval for free spins
-        this.freeSpinInterval = setInterval(() => {
+    
+        const triggerNextSpin = () => {
             if (ResultData.gameData.freeSpinCount > 0) {
-                Globals.Socket?.sendMessage("SPIN", { currentBet: currentGameData.currentBetIndex, currentLines: initData.gameData.linesApiData.length, spins: 1 });
-                this.onSpinCallBack();
-                ResultData.gameData.freeSpinCount--;
-                setTimeout(() => {
-                    this.slot.stopTween();
-                }, 1000);
+                // Check if cascading is still in progress
+                if (!this.slot.isCascading) {
+                    Globals.Socket?.sendMessage("SPIN", { 
+                        currentBet: currentGameData.currentBetIndex, 
+                        currentLines: initData.gameData.linesApiData.length, 
+                        spins: 1 
+                    });
+                    this.onSpinCallBack();
+                    ResultData.gameData.freeSpinCount--;
+                    
+                    setTimeout(() => {
+                        this.slot.stopTween();
+                    }, 1000);
+    
+                    // Wait for all cascading animations to complete before next spin
+                    const checkCascading = () => {
+                        if (!this.slot.isCascading) {
+                            // Add a delay before next spin
+                            setTimeout(() => {
+                                triggerNextSpin();
+                            }, 2000); // Adjust delay as needed
+                        } else {
+                            setTimeout(checkCascading, 500);
+                        }
+                    };
+    
+                    // Start checking after initial spin animations
+                    setTimeout(checkCascading, 3000);
+                }
             } else {
-                // End free spins
                 this.endFreeSpins();
             }
-        }, 6000); // Adjust timing as needed (6 seconds between spins)
+        };
+    
+        // Start the first spin
+        triggerNextSpin();
     }
     
     private endFreeSpins() {
-        // Clear the interval
         if (this.freeSpinInterval) {
             clearInterval(this.freeSpinInterval);
             this.freeSpinInterval = null;
         }
-        // Reset free spin state
         ResultData.gameData.isFreeSpin = false;
         this.reelBg.setTexture("reelBg");
         this.gameBg.setTexture("gameBg");
-    }
-
-    // Function to show win popup
-    private showWinPopup(winAmount: number, spriteKey: string) {
-        const inputOverlay = this.add.rectangle(0, 0, this.cameras.main.width, this.cameras.main.height, 0x000000, 0.7)
-            .setOrigin(0, 0)
-            .setDepth(9)
-            .setInteractive();
-
-        inputOverlay.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-            pointer.event.stopPropagation(); 
-        });
-
-        const left = this.add.sprite(gameConfig.scale.width * 0.2, gameConfig.scale.height * 0.2, "leftWinColumn")
-            .setDepth(10)
-            .setOrigin(0.5);
-
-        const rightWood = this.add.sprite(gameConfig.scale.width * 0.8, gameConfig.scale.height * 0.2, "rightWinColumn").setDepth(10).setOrigin(0.5);
-        const balanceBox = this.add.sprite(gameConfig.scale.width * 0.5, gameConfig.scale.height * 0.57, "winPanelBalance").setDepth(11).setOrigin(0.5)
-        const leftCoin = this.add.sprite(gameConfig.scale.width * 0.1, gameConfig.scale.height * 0.35, `leftCoin`)
-            .setDepth(13)
-            .setScale(0.7)
-        const rightCoin = this.add.sprite(gameConfig.scale.width * 0.9, gameConfig.scale.height * 0.35, "rightCoin").setDepth(13).setScale(0.7)
-        const winSprite = this.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY * 0.65, spriteKey)
-            .setScale(0.7)
-            .setDepth(13);
-
-        const winText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY + 70, '0', { fontFamily: "Anton", fontSize: '100px', color: '#FFFFFF'
-        }).setDepth(15).setOrigin(0.5);
-
-        this.tweens.addCounter({
-            from: 0,
-            to: winAmount,
-            duration: 1000,
-            onUpdate: (tween) => {
-                const value = Math.floor(tween.getValue());
-                winText.setText(value.toString());
-            },
-            onComplete: () => {
-                this.time.delayedCall(4000, () => {
-                    inputOverlay.destroy();
-                    left.destroy();
-                    rightWood.destroy();
-                    balanceBox.destroy();
-                    winSprite.destroy();
-                    winText.destroy();
-                    leftCoin.destroy();
-                    rightCoin.destroy();
-                });
-            }
-        });
+        this.showButtons();
     }
 
     private hideButtons(){

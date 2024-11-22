@@ -79,7 +79,7 @@ export class Slots extends Phaser.GameObjects.Container {
                     startPos.x + i * (this.spacingX),
                     startPos.y + j * (11 + this.spacingY)
                 );
-                slot.symbol.setScale(0.75)
+                slot.symbol.setScale(0.8)
                 slot.startX = slot.symbol.x;
                 slot.startY = slot.symbol.y;
                 this.slotSymbols[i].push(slot);
@@ -184,11 +184,11 @@ export class Slots extends Phaser.GameObjects.Container {
                 onComplete: () => {
                     // Play appropriate animation after landing
                     if (resultSymbol === 12) {
-                        const cowAnimKey = `cowIdle_${reelIndex}_${j}`;
-                        if (!this.scene.anims.exists(cowAnimKey)) {
-                            this.createCowAnimation(cowAnimKey, this.getRandomCowType());
-                        }
-                        symbol.symbol.play(cowAnimKey);
+                        // const cowAnimKey = `cowIdle_${reelIndex}_${j}`;
+                        // if (!this.scene.anims.exists(cowAnimKey)) {
+                        //     this.createCowAnimation(cowAnimKey, this.getRandomCowType());
+                        // }
+                        // symbol.symbol.play(cowAnimKey);
                     } else {
                         const symbolAnimKey = `symbol_anim_${resultSymbol}_${reelIndex}_${j}`;
                         if (!this.scene.anims.exists(symbolAnimKey)) {
@@ -200,6 +200,7 @@ export class Slots extends Phaser.GameObjects.Container {
                     // Check if this is the last symbol of the last reel
                     if (reelIndex === this.reelContainers.length - 1 && 
                         j === this.totalVisibleSymbols - 1) {
+                        // this.scene.time.removeAllEvents();
                         this.playWinAnimations();
                         this.moveSlots = false;
                         if (!ResultData.gameData.cascading || ResultData.gameData.cascading.length === 0) {
@@ -231,7 +232,7 @@ export class Slots extends Phaser.GameObjects.Container {
                 }
             });
         });
-    
+        // this.winMusic("winMusic");
         // Clear any existing delayed calls
         this.scene.time.removeAllEvents();
         
@@ -271,9 +272,14 @@ export class Slots extends Phaser.GameObjects.Container {
             let progress = 0;
             const startWidth = 2;
             const endWidth = 15;
+            let soundPlayed = false; // Flag to track if sound has been played
             
             const animateLaser = () => {
                 progress += 0.07;
+                if (!soundPlayed) {
+                    this.SoundManager.playSound("laserSound");
+                    soundPlayed = true;
+                }
                 
                 if (progress >= 1) {
                     this.scene.time.delayedCall(200, () => {
@@ -324,7 +330,6 @@ export class Slots extends Phaser.GameObjects.Container {
     
                 this.scene.time.delayedCall(16, animateLaser);
             };
-    
             animateLaser();
         });
     }
@@ -339,6 +344,7 @@ export class Slots extends Phaser.GameObjects.Container {
         this.isCascading = true;
         this.disableSpinButton(); // Disable at start
         this.scene.time.removeAllEvents(); // Clear any pending events
+        this.winMusic("winMusic");
     
         try {
             for (let cascadeIndex = 0; cascadeIndex < ResultData.gameData.cascading.length; cascadeIndex++) {
@@ -357,6 +363,9 @@ export class Slots extends Phaser.GameObjects.Container {
             this.isCascading = false;
             this.scene.time.removeAllEvents();
             this.enableSpinButton();
+            if(ResultData.playerData.currentWining > 0){
+                this.uiContainer.insideText.setText(`TOTAL WINNING : ${ResultData.playerData.currentWining.toFixed(2)} !`);
+            }
         }
     }
     
@@ -412,7 +421,7 @@ export class Slots extends Phaser.GameObjects.Container {
             }
         });
     }
-
+    // this was to play all the laser and blast animation same time
     private async playBlastAnimations(symbolsToFill: any[]): Promise<void> {
         return new Promise<void>(async (resolve) => {
             const animationsToPlay = [];
@@ -446,6 +455,67 @@ export class Slots extends Phaser.GameObjects.Container {
             resolve();
         });
     } 
+
+    // private async playBlastAnimations(symbolsToFill: any[]): Promise<void> {
+    //     return new Promise<void>(async (resolve) => {
+    //         const animationsToPlay = [];
+    
+    //         // Collect all animations to play
+    //         for (let columnIndex = 0; columnIndex < ResultData.gameData.resultSymbols[0].length; columnIndex++) {
+    //             if (symbolsToFill[columnIndex] && symbolsToFill[columnIndex].length > 0) {
+    //                 for (let rowIndex = 0; rowIndex < symbolsToFill[columnIndex].length; rowIndex++) {
+    //                     const currentSymbol = ResultData.gameData.resultSymbols[rowIndex][columnIndex];
+    //                     const newSymbolId = symbolsToFill[columnIndex][rowIndex];
+    
+    //                     animationsToPlay.push({
+    //                         columnIndex,
+    //                         rowIndex,
+    //                         currentSymbol,
+    //                         newSymbolId
+    //                     });
+    //                 }
+    //             }
+    //         }
+    
+    //         // Shuffle the animations array for random order
+    //         this.shuffleArray(animationsToPlay);
+    
+    //         // Play animations sequentially with delays
+    //         for (let i = 0; i < animationsToPlay.length; i++) {
+    //             const animData = animationsToPlay[i];
+                
+    //             // Add a random delay before each animation
+    //             await new Promise(resolve => 
+    //                 this.scene.time.delayedCall(Phaser.Math.Between(50, 100), resolve)
+    //             );
+    
+    //             if (animData.currentSymbol === 12) {
+    //                 await this.playPullAnimation(
+    //                     animData.columnIndex, 
+    //                     animData.rowIndex, 
+    //                     animData.newSymbolId
+    //                 );
+    //             } else {
+    //                 await this.playLaserAndBlastAnimation(
+    //                     animData.columnIndex, 
+    //                     animData.rowIndex, 
+    //                     animData.newSymbolId
+    //                 );
+    //             }
+    //         }
+    
+    //         resolve();
+    //     });
+    // }
+    
+    // Helper method to shuffle array
+    private shuffleArray(array: any[]) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
     
     private playLaserAndBlastAnimation(columnIndex: number, rowIndex: number, newSymbolId: number): Promise<void> {
         return new Promise<void>(async (resolve) => {
@@ -484,7 +554,7 @@ export class Slots extends Phaser.GameObjects.Container {
                     repeat: 0
                 });
             }
-    
+            this.winMusic("blastSound")
             symbol.symbol.setAlpha(0);
             blastSprite.play('blast');
             blastSprite.on('animationcomplete', () => {
@@ -499,64 +569,70 @@ export class Slots extends Phaser.GameObjects.Container {
             const symbol = this.slotSymbols[columnIndex][rowIndex];
             const ufo = this.ufoSprites[columnIndex];
     
-            const newSymbolId = ResultData.gameData.cascading[0].symbolsToFill[columnIndex][rowIndex];
-    
-            // Adjust distance calculation for proper Y positioning
-            const distance = Math.abs((ufo.y + 20) - (symbol.symbol.y - 180));
-            
-            if (!this.scene.anims.exists(`pullAnimation_${rowIndex}`)) {
-                const frameConfigs = Array.from({ length: 18 }, (_, i) => ({
-                    key: `pullAnim${i}`,
-                    scaleY: distance / this.scene.textures.getFrame('pullAnim0').height
-                }));
-    
-                this.scene.anims.create({
-                    key: `pullAnimation_${rowIndex}`,
-                    frames: frameConfigs,
-                    frameRate: 20,
-                    repeat: 0
-                });
+            // First, play the cow animation
+            const cowAnimKey = `cowIdle_${columnIndex}_${rowIndex}`;
+            if (!this.scene.anims.exists(cowAnimKey)) {
+                this.createCowAnimation(cowAnimKey, this.getRandomCowType());
             }
+            
+            // Play cow animation and wait for it to complete
+            symbol.symbol.play(cowAnimKey);
+            symbol.symbol.once('animationcomplete', () => {
+                // After cow animation completes, start the pull animation
+                const distance = Math.abs((ufo.y + 20) - (symbol.symbol.y - 180));
+                
+                if (!this.scene.anims.exists(`pullAnimation_${rowIndex}`)) {
+                    const frameConfigs = Array.from({ length: 18 }, (_, i) => ({
+                        key: `pullAnim${i}`,
+                        scaleY: distance / this.scene.textures.getFrame('pullAnim0').height
+                    }));
     
-            const pullSprite = this.scene.add.sprite(ufo.x, ufo.y + 20, 'pullAnim0')
-                .setOrigin(0.5, 0)
-                .setDepth(15); 
-    
-            const scaleY = distance / this.scene.textures.getFrame('pullAnim0').height;
-            pullSprite.setScale(0.45, scaleY);
-    
-            symbol.symbol.setAlpha(0);
-            pullSprite.play(`pullAnimation_${rowIndex}`);
-    
-            // Adjust the tween animation for proper Y positioning
-            this.scene.tweens.add({
-                targets: symbol.symbol,
-                x: ufo.x,
-                y: ufo.y - 180, // Adjust Y position
-                scaleX: 0.3,
-                scaleY: 0.3,
-                duration: 500,
-                ease: 'Power2',
-                onComplete: () => {
-                    const newSymbolTexture = newSymbolId === 12
-                    ? this.getRandomCowTexture()
-                    : `slots${newSymbolId}_0`;
-
-                    // Reset symbol properties and set the new texture
-                    symbol.symbol
-                        .setTexture(newSymbolTexture)
-                        .setScale(0.75)
-                        .setPosition(symbol.startX, symbol.startY); // Set to correct initial position
-
+                    this.scene.anims.create({
+                        key: `pullAnimation_${rowIndex}`,
+                        frames: frameConfigs,
+                        frameRate: 20,
+                        repeat: 0
+                    });
                 }
-            });
     
-            pullSprite.on('animationcomplete', () => {
-                pullSprite.destroy();
-                resolve();
+                const pullSprite = this.scene.add.sprite(ufo.x, ufo.y + 20, 'pullAnim0')
+                    .setOrigin(0.5, 0)
+                    .setDepth(15);
+    
+                const scaleY = distance / this.scene.textures.getFrame('pullAnim0').height;
+                pullSprite.setScale(0.45, scaleY);
+                this.winMusic("pullSound");
+                symbol.symbol.setAlpha(0);
+                pullSprite.play(`pullAnimation_${rowIndex}`);
+    
+                this.scene.tweens.add({
+                    targets: symbol.symbol,
+                    x: ufo.x,
+                    y: ufo.y - 180,
+                    scaleX: 0.3,
+                    scaleY: 0.3,
+                    duration: 500,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        const newSymbolTexture = newSymbolId === 12
+                            ? this.getRandomCowTexture()
+                            : `slots${newSymbolId}_0`;
+    
+                        symbol.symbol
+                            .setTexture(newSymbolTexture)
+                            .setScale(0.75)
+                            .setPosition(symbol.startX, symbol.startY);
+                    }
+                });
+    
+                pullSprite.on('animationcomplete', () => {
+                    pullSprite.destroy();
+                    resolve();
+                });
             });
         });
     }
+    
 
     private getRandomCowType(): string {
         const cowTypes = ['blackCow', 'brownCow', 'whiteCow'];
@@ -574,7 +650,7 @@ export class Slots extends Phaser.GameObjects.Container {
                 key: `${cowType}12_${i}`
             })),
             frameRate: 10,
-            repeat: -1
+            repeat: 0
         });
     }
     
@@ -739,9 +815,9 @@ export class Slots extends Phaser.GameObjects.Container {
     private createBorderAnimation(x: number, y: number): Phaser.GameObjects.Graphics {
         const border = this.scene.add.graphics();
         const symbol = this.slotSymbols[x][y].symbol;
-        const padding = 5; // Adjust padding as needed
+        const padding = 0; // Adjust padding as needed
         const borderWidth = 10; // Adjust border width as needed
-        const cornerRadius = 10; // Radius for rounded corners
+        const cornerRadius = 0; // Radius for rounded corners
     
         border.lineStyle(borderWidth, 0x8B4513); // Brown color
     
@@ -817,6 +893,7 @@ export class Slots extends Phaser.GameObjects.Container {
     
     private enableSpinButton() {
         console.log("check retrun");
+        this.scene.time.removeAllEvents();
         
         if (this.uiContainer && this.uiContainer.spinBtn) {
             this.uiContainer.spinBtn.setTexture("spinBtn");
