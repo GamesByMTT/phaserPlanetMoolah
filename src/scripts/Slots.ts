@@ -703,7 +703,7 @@ export class Slots extends Phaser.GameObjects.Container {
                                             repeat: 1
                                         });
                                     }
-                                    symbol.symbol.play(cowAnimKey);
+                                    // symbol.symbol.play(cowAnimKey);
                                 } else {
                                     // Handle regular symbols
                                     const newTextureKey = `slots${newSymbolId}_0`;
@@ -719,7 +719,7 @@ export class Slots extends Phaser.GameObjects.Container {
                                             repeat: -1
                                         });
                                     }
-                                    symbol.symbol.play(animKey);
+                                    // symbol.symbol.play(animKey);
                                 }
                                 resolve();
                             }
@@ -878,7 +878,6 @@ export class Slots extends Phaser.GameObjects.Container {
                     this.scene.time.delayedCall(1000, resolve);
                 }
             };
-    
             // Start blinking
             blink();
         });
@@ -898,6 +897,8 @@ export class Slots extends Phaser.GameObjects.Container {
         if (this.uiContainer && this.uiContainer.spinBtn) {
             this.uiContainer.spinBtn.setTexture("spinBtn");
             this.uiContainer.spinBtn.setInteractive();
+            this.uiContainer.autoBetBtn.setTexture("autoSpin")
+            this.uiContainer.autoBetBtn.setInteractive();
         }
     }
 }

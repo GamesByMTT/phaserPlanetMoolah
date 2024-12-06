@@ -8,7 +8,6 @@ import SoundManager from './SoundManager';
 export class UiContainer extends Phaser.GameObjects.Container {
     SoundManager: SoundManager
     spinBtn!: Phaser.GameObjects.Sprite;
-    maxbetBtn!: Phaser.GameObjects.Sprite;
     autoBetBtn!: Phaser.GameObjects.Sprite;
     doubleButton!: Phaser.GameObjects.Sprite;
     CurrentBetText!: TextLabel;
@@ -206,7 +205,7 @@ export class UiContainer extends Phaser.GameObjects.Container {
                                 currentLines : initData.gameData.linesApiData.length
                             });
                             currentGameData.currentBalance -= initData.gameData.Bets[currentGameData.currentBetIndex];
-                            this.currentBalanceText.updateLabelText(currentGameData.currentBalance.toFixed(2));
+                            // this.currentBalanceText.updateLabelText(currentGameData.currentBalance.toFixed(2));
                             this.autoSpinRec(true)
                             spinCallBack(); // Callback to indicate the spin has started
                             // Start the spin recursion
@@ -256,7 +255,7 @@ export class UiContainer extends Phaser.GameObjects.Container {
                         currentLines : 12
                     });
                     currentGameData.currentBalance -= initData.gameData.Bets[currentGameData.currentBetIndex];
-                    this.currentBalanceText.updateLabelText(currentGameData.currentBalance.toFixed(2));
+                    // this.currentBalanceText.updateLabelText(currentGameData.currentBalance.toFixed(2));
                     spinCallBack();
                     // Call the spin recursively
                     this.spinRecursively(spinCallBack);
@@ -292,8 +291,6 @@ export class UiContainer extends Phaser.GameObjects.Container {
             this.spinBtn.setTexture("spinBtn");
             // this.autoBetBtn.setTexture("autoSpinOnPressed");
             this.autoBetBtn.setTexture("autoSpin");
-            this.maxbetBtn.disableInteractive();
-            this.maxbetBtn.setTexture("maxBetBtOnPressed");
             this.pBtn.disableInteractive();
             this.pBtn.setTexture("pBtnH")
             // this.spinBtn.setAlpha(0.5)
@@ -301,18 +298,16 @@ export class UiContainer extends Phaser.GameObjects.Container {
         }else{
             this.spinBtn.setTexture("spinBtn");
             this.autoBetBtn.setTexture("autoSpin");
-            this.maxbetBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
             this.pBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
             this.autoBetBtn.setAlpha(1)
             this.pBtn.setTexture("pBtn")
-            this.maxbetBtn.setTexture("maxBetBtn");
            
         }        
     }
 
     onSpin(spin: boolean) {
         // Handle spin functionality
-        console.error("cececfeve", spin)
+        // console.error("cececfeve", spin)
         if(this.isAutoSpinning){
             return
         }
@@ -321,22 +316,17 @@ export class UiContainer extends Phaser.GameObjects.Container {
             this.spinBtn.disableInteractive();
             this.autoBetBtn.setTexture("autoSpinOnPressed")
             this.autoBetBtn.disableInteractive();
-            // this.maxbetBtn.disableInteractive();
-            // this.maxbetBtn.setTexture("maxBetBtOnPressed");
             this.pBtn.disableInteractive();
             this.pBtn.setTexture("pBtnH")
-            // this.spinBtn.setAlpha(0.5)
-            // this.autoBetBtn.setAlpha(0.5)
             
         }else{
             this.spinBtn.setTexture("spinBtn");
             this.spinBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
             this.autoBetBtn.setTexture("autoSpin");
             this.autoBetBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
-            // this.maxbetBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
-            // this.maxbetBtn.setTexture("maxBetBtn");
-            this.pBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
             this.pBtn.setTexture("pBtn");
+            this.pBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
+           
             // this.spinBtn.setAlpha(1)
             // this.autoBetBtn.setAlpha(1)
         }        

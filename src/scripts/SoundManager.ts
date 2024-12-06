@@ -64,7 +64,7 @@ public setSoundEnabled(enabled: boolean) {
 
 public setMusicEnabled(enabled: boolean) {
     this.musicEnabled = enabled;
-    console.log("this.musicEnabled", this.musicEnabled);
+    // console.log("this.musicEnabled", this.musicEnabled);
     if (!enabled) {
         this.stopSound("backgroundMusic")
     }else{

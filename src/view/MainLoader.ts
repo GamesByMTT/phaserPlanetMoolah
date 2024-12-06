@@ -136,9 +136,11 @@ export default class MainLoader extends Scene {
     }
 
     private onMainAssetsLoaded() {
-        if (Globals.Socket?.socketLoaded) {
-            this.loadMainScene();
-        }
+        setTimeout(() => {
+            if (Globals.Socket?.socketLoaded) {
+                this.loadMainScene();
+            }
+        }, 400);
     }
 
     private loadMainScene() {

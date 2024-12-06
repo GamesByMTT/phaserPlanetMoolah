@@ -79,7 +79,7 @@ export default class MainScene extends Scene {
     }
 
     private onResultCallBack() {
-        // this.uiContainer.onSpin(false);
+        this.uiContainer.onSpin(false);
         this.soundManager.stopSound("onSpin"); 
         // this.lineGenerator.showLines(ResultData.gameData.cascading.lineToEmit);
     }
@@ -121,7 +121,7 @@ export default class MainScene extends Scene {
             this.gameBg.setTexture("gameBg");
         }
         if(ResultData.playerData.currentWining > 0){
-            this.uiContainer.insideText.setText(`YOU WIN ${ResultData.playerData.currentWining.toFixed(2)}`);
+            this.uiContainer.insideText.setText(`YOU WIN ${ResultData.playerData.currentWining}`);
         }else{
             this.uiContainer.insideText.setText(`BETTER LUCK NEXT TIME!`)
         }
