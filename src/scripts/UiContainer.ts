@@ -9,7 +9,6 @@ export class UiContainer extends Phaser.GameObjects.Container {
     SoundManager: SoundManager
     spinBtn!: Phaser.GameObjects.Sprite;
     autoBetBtn!: Phaser.GameObjects.Sprite;
-    doubleButton!: Phaser.GameObjects.Sprite;
     CurrentBetText!: TextLabel;
     currentWiningText!: TextLabel;
     WiningText!: Phaser.GameObjects.Text;
@@ -145,9 +144,7 @@ export class UiContainer extends Phaser.GameObjects.Container {
             }
                 this.buttonMusic("spinButton");
                 this.onSpin(true);
-                if(this.doubleButton){
-                    this.doubleButton.destroy();   
-                }
+        
             // checking if autoSpining is working or not if it is auto Spining then stop it
             if(this.isAutoSpinning){
                 this.autoBetBtn.emit('pointerdown'); // Simulate the pointerdown event
@@ -199,17 +196,19 @@ export class UiContainer extends Phaser.GameObjects.Container {
                     duration: 100,
                     onComplete: () =>{
                         this.isAutoSpinning = !this.isAutoSpinning; // Toggle auto-spin state
-                        if (this.isAutoSpinning && currentGameData.currentBalance > initData.gameData.Bets[currentGameData.currentBetIndex]) {
+                        if (this.isAutoSpinning && currentGameData.currentBalance > (initData.gameData.Bets[currentGameData.currentBetIndex]*initData.gameData.linesApiData.length)) {
                             Globals.Socket?.sendMessage("SPIN", {
                                 currentBet: currentGameData.currentBetIndex,
                                 currentLines : initData.gameData.linesApiData.length
                             });
-                            currentGameData.currentBalance -= initData.gameData.Bets[currentGameData.currentBetIndex];
+                            currentGameData.currentBalance -= (initData.gameData.Bets[currentGameData.currentBetIndex] * initData.gameData.linesApiData.length);
+                            spinCallBack(); // Callback to indicate the spin has started
                             // this.currentBalanceText.updateLabelText(currentGameData.currentBalance.toFixed(2));
                             this.autoSpinRec(true)
-                            spinCallBack(); // Callback to indicate the spin has started
                             // Start the spin recursion
-                            this.startSpinRecursion(spinCallBack);
+                            setTimeout(() => {
+                                this.startSpinRecursion(spinCallBack);
+                            }, 500);
                         } else {
                             // Stop the spin if auto-spin is turned off
                             this.autoSpinRec(false);
@@ -245,16 +244,15 @@ export class UiContainer extends Phaser.GameObjects.Container {
      */
     startSpinRecursion(spinCallBack: () => void) {
         if (this.isAutoSpinning && currentGameData.currentBalance > 0) {
-            // this.startFireAnimation();
-            // Delay before the next spin
-            const delay = currentGameData.isMoving && (ResultData.gameData.symbolsToEmit.length > 0) ? 3000 : 5000;
-            this.scene.time.delayedCall(delay, () => {
+        
+            const delayAuto = (ResultData.gameData.cascading.length > 0) ? (ResultData.gameData.cascading.length == 1) ? 12000 : ResultData.gameData.cascading.length * 10000 : 5000
+                this.scene.time.delayedCall(delayAuto, () => {
                 if (this.isAutoSpinning && currentGameData.currentBalance >= 0) {
                     Globals.Socket?.sendMessage("SPIN", {
                         currentBet: currentGameData.currentBetIndex,
-                        currentLines : 12
+                        currentLines : initData.gameData.linesApiData.length
                     });
-                    currentGameData.currentBalance -= initData.gameData.Bets[currentGameData.currentBetIndex];
+                    currentGameData.currentBalance -= (initData.gameData.Bets[currentGameData.currentBetIndex] * initData.gameData.linesApiData.length);
                     // this.currentBalanceText.updateLabelText(currentGameData.currentBalance.toFixed(2));
                     spinCallBack();
                     // Call the spin recursively
@@ -268,13 +266,13 @@ export class UiContainer extends Phaser.GameObjects.Container {
         if (this.isAutoSpinning) {
             // Perform the spin
             this.autoSpinRec(true);
-            if (currentGameData.currentBalance < initData.gameData.Bets[currentGameData.currentBetIndex]) {
-                // Stop the spin when a winning condition is met or balance is insufficient
+            if (currentGameData.currentBalance < (initData.gameData.Bets[currentGameData.currentBetIndex]*initData.gameData.linesApiData.length)) {
                 this.autoSpinRec(false);
                 spinCallBack();
             } else {
-                // Continue spinning if no winning condition is met and balance is sufficient
-                this.startSpinRecursion(spinCallBack);
+                setTimeout(() => {
+                    this.startSpinRecursion(spinCallBack);
+                }, 500);
             }
         }
     }
@@ -285,23 +283,19 @@ export class UiContainer extends Phaser.GameObjects.Container {
         return button;
     }
    
-    autoSpinRec(spin: boolean){
+    autoSpinRec(spin: boolean){        
         if(spin){
-            // this.spinBtn.setTexture("spinBtnOnPressed"); 
             this.spinBtn.setTexture("spinBtn");
-            // this.autoBetBtn.setTexture("autoSpinOnPressed");
             this.autoBetBtn.setTexture("autoSpin");
             this.pBtn.disableInteractive();
             this.pBtn.setTexture("pBtnH")
-            // this.spinBtn.setAlpha(0.5)
             this.autoBetBtn.setAlpha(0.5)
         }else{
             this.spinBtn.setTexture("spinBtn");
             this.autoBetBtn.setTexture("autoSpin");
             this.pBtn.setInteractive({ useHandCursor: true, pixelPerfect: true });
             this.autoBetBtn.setAlpha(1)
-            this.pBtn.setTexture("pBtn")
-           
+            this.pBtn.setTexture("pBtn")           
         }        
     }
 

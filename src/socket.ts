@@ -31,9 +31,6 @@ export class SocketManager {
         token: this.authToken,
         gameId: "SL-PM",
       },
-      // reconnectionAttempts: 5,
-      // reconnectionDelay: 15000, // Initial delay between reconnection attempts (in ms)
-      // reconnectionDelayMax: 10000,
     });
     this.setupEventListeners();
   }
@@ -43,12 +40,10 @@ export class SocketManager {
     });
 
     this.socket.on("connect", () => {
-      console.log("Connected to the server");
       this.socket.on("message", (message : any) => {
         const data = JSON.parse(message);
         
         if(data.id=="AnotherDevice"){
-          console.log("dffgbfgb");
           
         } 
         
@@ -72,9 +67,6 @@ export class SocketManager {
               ResultData.gameData = data.message.GameData;
               ResultData.playerData = data.message.PlayerData;
               Globals.emitter?.Call("ResultData");
-              console.log(data.message.GameData.resultSymbols, "result");
-              
-              console.log(ResultData, "Win", ResultData.playerData.currentWining);
         }
       });
     });
@@ -103,10 +95,7 @@ export class SocketManager {
   }
   sendMessage(id : string, message: any) {
     // console.log(message, "sending message");
-    this.socket.emit(
-      "message",
-      JSON.stringify({ id: id, data: message })
-    );
+    this.socket.emit("message", JSON.stringify({ id: id, data: message }));
   }
 }
 

@@ -182,21 +182,11 @@ export class Slots extends Phaser.GameObjects.Container {
                 delay: reelDelay + (j * 150), // Stagger the drops
                 ease: 'Power1',
                 onComplete: () => {
-                    // Play appropriate animation after landing
-                    if (resultSymbol === 12) {
-                        // const cowAnimKey = `cowIdle_${reelIndex}_${j}`;
-                        // if (!this.scene.anims.exists(cowAnimKey)) {
-                        //     this.createCowAnimation(cowAnimKey, this.getRandomCowType());
-                        // }
-                        // symbol.symbol.play(cowAnimKey);
-                    } else {
-                        const symbolAnimKey = `symbol_anim_${resultSymbol}_${reelIndex}_${j}`;
+                    const symbolAnimKey = `symbol_anim_${resultSymbol}_${reelIndex}_${j}`;
                         if (!this.scene.anims.exists(symbolAnimKey)) {
                             this.createSymbolAnimation(symbolAnimKey, resultSymbol);
                         }
                         symbol.symbol.play(symbolAnimKey);
-                    }
-    
                     // Check if this is the last symbol of the last reel
                     if (reelIndex === this.reelContainers.length - 1 && 
                         j === this.totalVisibleSymbols - 1) {
@@ -204,7 +194,9 @@ export class Slots extends Phaser.GameObjects.Container {
                         this.playWinAnimations();
                         this.moveSlots = false;
                         if (!ResultData.gameData.cascading || ResultData.gameData.cascading.length === 0) {
-                            this.enableSpinButton();
+                            if(!this.uiContainer.isAutoSpinning){
+                                this.enableSpinButton();
+                            }
                         }
                     }
                 }
@@ -234,10 +226,12 @@ export class Slots extends Phaser.GameObjects.Container {
         });
         // this.winMusic("winMusic");
         // Clear any existing delayed calls
-        this.scene.time.removeAllEvents();
+        if(!this.uiContainer.isAutoSpinning){
+            this.scene.time.removeAllEvents();
+        }
         
         // Set up single cascading trigger
-        this.scene.time.delayedCall(2500, () => {
+        this.scene.time.delayedCall(2000, () => {
             if (!this.isCascading) {
                 this.handleCascading();
             }
@@ -342,8 +336,8 @@ export class Slots extends Phaser.GameObjects.Container {
         }
     
         this.isCascading = true;
-        this.disableSpinButton(); // Disable at start
-        this.scene.time.removeAllEvents(); // Clear any pending events
+        this.disableSpinButton(); 
+        // this.scene.time.removeAllEvents(); // Clear any pending events
         this.winMusic("winMusic");
     
         try {
@@ -361,8 +355,10 @@ export class Slots extends Phaser.GameObjects.Container {
             // console.error('Error in handleCascading:', error);
         } finally {
             this.isCascading = false;
-            this.scene.time.removeAllEvents();
-            this.enableSpinButton();
+            if(!this.uiContainer.isAutoSpinning){
+                this.scene.time.removeAllEvents();
+                this.enableSpinButton();
+            }
             if(ResultData.playerData.currentWining > 0){
                 this.uiContainer.insideText.setText(`TOTAL WINNING : ${ResultData.playerData.currentWining.toFixed(2)} !`);
             }
@@ -891,9 +887,11 @@ export class Slots extends Phaser.GameObjects.Container {
     }
     
     private enableSpinButton() {
-        console.log("check retrun");
-        this.scene.time.removeAllEvents();
-        
+        // console.log("check retrun");
+        if(!this.uiContainer.isAutoSpinning){
+            return
+        }
+        this.scene.time.removeAllEvents();        
         if (this.uiContainer && this.uiContainer.spinBtn) {
             this.uiContainer.spinBtn.setTexture("spinBtn");
             this.uiContainer.spinBtn.setInteractive();

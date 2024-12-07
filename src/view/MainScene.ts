@@ -111,6 +111,7 @@ export default class MainScene extends Scene {
             this.gameBg.setTexture("freeSpinBg");
             this.hideButtons()
             if (!this.freeSpinInterval && ResultData.gameData.freeSpinCount > 0) {
+                
                 this.startFreeSpins();
                 this.uiContainer.onSpin(true);
             }
@@ -127,25 +128,7 @@ export default class MainScene extends Scene {
         }
 
         this.uiContainer.currentWiningText.updateLabelText(ResultData.playerData.currentWining.toFixed(2).toString());
-        currentGameData.currentBalance = ResultData.playerData.Balance;
-        // let betValue = (initData.gameData.Bets[currentGameData.currentBetIndex]) * 20;
-        // let winAmount = ResultData.gameData.WinAmout;
-        // let jackpot = ResultData.gameData.jackpot
-        // // this.uiContainer.currentBalanceText.updateLabelText(parseFloat(currentGameData.currentBalance).toFixed(2).toString());
-        
-        // if (winAmount >= 10 * betValue && winAmount < 15 * betValue) {
-        //     // Big Win Popup
-        //     this.showWinPopup(winAmount, 'bigWinText')
-        //    } else if (winAmount >= 15 * betValue && winAmount < 20 * betValue) {
-        //        // HugeWinPopup
-        //        this.showWinPopup(winAmount, 'hugeWinText')
-        //    } else if (winAmount >= 20 * betValue && winAmount < 25 * betValue) {
-        //        //MegawinPopup
-        //        this.showWinPopup(winAmount, 'megaWinText')
-        //    } else if(jackpot > 0) {
-        //       //jackpot Condition
-        //       this.showWinPopup(winAmount, 'jackpotText')
-        //    }
+        currentGameData.currentBalance = ResultData.playerData.Balance;        
     }
 
     private startFreeSpins() {
